@@ -1,9 +1,16 @@
 package com.example.johnb.openingsfinder;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.graphics.RectF;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.CalendarContract;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -35,11 +42,13 @@ public class MainActivity extends AppCompatActivity
         WeekView.EventLongPressListener,
         WeekView.EmptyViewLongPressListener {
 
+    private static final int PERMISSIONS_REQUEST_READ_WRITE_CALENDAR = 1234;
 
     private static final int TYPE_DAY_VIEW = 1;
     private static final int TYPE_THREE_DAY_VIEW = 2;
     private static final int TYPE_WEEK_VIEW = 3;
     private int mWeekViewType = TYPE_THREE_DAY_VIEW;
+
     private WeekView mWeekView;
 
     @Override
@@ -68,6 +77,52 @@ public class MainActivity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
 
         setUpWeekView();
+    }
+
+    public boolean checkCalendarPermissions() {
+        // Return true if permissions are good, if not, we ask for them and return false.
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            //Log.d("PermissionsReqResult", "Checking FOR PERMISSIONS");
+            if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_CALENDAR) != PackageManager.PERMISSION_GRANTED) {
+                //Log.d("Permissions", "Permissions not already granted, asking...");
+                ActivityCompat.requestPermissions(MainActivity.this,
+                        new String[]{Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR},
+                        PERMISSIONS_REQUEST_READ_WRITE_CALENDAR);
+                return false;
+            } else {
+                //Log.d("PermissionsReqResult", "PERMISSIONS are good");
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSIONS_REQUEST_READ_WRITE_CALENDAR: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    //Log.d("PermissionsReqResult", "Permissions Granted");
+                    // permission was granted, yay! Do the
+                    // contacts-related task you need to do.
+                    if (mWeekView != null) {
+                        mWeekView.notifyDatasetChanged();
+                    }
+                } else {
+                    Log.d("PermissionsReqResult", "Permissions Denied");
+                    Toast.makeText(this, "Calendar Permissions Denied", Toast.LENGTH_LONG).show();
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                }
+                return;
+            }
+
+            // other 'case' lines to check for other
+            // permissions this app might request
+        }
     }
 
     void setUpWeekView() {
