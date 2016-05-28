@@ -5,7 +5,6 @@ import android.content.pm.PackageManager;
 import android.graphics.RectF;
 import android.os.Build;
 import android.os.Bundle;
-import android.provider.CalendarContract;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
@@ -38,9 +37,10 @@ public class MainActivity extends AppCompatActivity
         implements
         NavigationView.OnNavigationItemSelectedListener,
         WeekView.EventClickListener,
-        MonthLoader.MonthChangeListener,
         WeekView.EventLongPressListener,
-        WeekView.EmptyViewLongPressListener {
+        WeekView.EmptyViewLongPressListener,
+        MonthLoader.MonthChangeListener,
+        GoogleCalendarClient.DataChangedListener {
 
     private static final int PERMISSIONS_REQUEST_READ_WRITE_CALENDAR = 1234;
 
@@ -51,9 +51,28 @@ public class MainActivity extends AppCompatActivity
 
     private WeekView mWeekView;
 
+
+    ///////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////
+
+    // Setup:
+
+    ///////////////////////////////////////////////////////////////////////////////
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        setUpStandardNavigationViewObjects();
+
+        if (checkCalendarPermissions()) {
+           setUpGoogleCalendarClient();
+        }
+        setUpWeekView();
+    }
+
+    private void setUpStandardNavigationViewObjects() {
+
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -75,8 +94,33 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+    }
 
-        setUpWeekView();
+    private void setUpGoogleCalendarClient() {
+        GoogleCalendarClient.getInstance().setContext(this);
+        GoogleCalendarClient.getInstance().loadCalendars();
+    }
+
+    void setUpWeekView() {
+        // Get a reference for the week view in the layout.
+        mWeekView = (WeekView) findViewById(R.id.weekView);
+
+        // Show a toast message about the touched event.
+        mWeekView.setOnEventClickListener(this);
+
+        // The week view has infinite scrolling horizontally. We have to provide the events of a
+        // month every time the month changes on the week view.
+        mWeekView.setMonthChangeListener(this);
+
+        // Set long press listener for events.
+        mWeekView.setEventLongPressListener(this);
+
+        // Set long press listener for empty view
+        mWeekView.setEmptyViewLongPressListener(this);
+
+        // Set up a date time interpreter to interpret how the date and time will be formatted in
+        // the week view. This is optional.
+        setupDateTimeInterpreter(false);
     }
 
     public boolean checkCalendarPermissions() {
@@ -105,17 +149,12 @@ public class MainActivity extends AppCompatActivity
                 // If request is cancelled, the result arrays are empty.
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    //Log.d("PermissionsReqResult", "Permissions Granted");
-                    // permission was granted, yay! Do the
-                    // contacts-related task you need to do.
-                    if (mWeekView != null) {
-                        mWeekView.notifyDatasetChanged();
-                    }
+
+                    setUpGoogleCalendarClient();
                 } else {
                     Log.d("PermissionsReqResult", "Permissions Denied");
-                    Toast.makeText(this, "Calendar Permissions Denied", Toast.LENGTH_LONG).show();
-                    // permission denied, boo! Disable the
-                    // functionality that depends on this permission.
+                    Toast.makeText(this, "Calendar Permissions Denied - We should show an alert and quit I think", Toast.LENGTH_LONG).show();
+                    // permission denied, Disable the functionality that depends on this permission.
                 }
                 return;
             }
@@ -125,27 +164,42 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    void setUpWeekView() {
-        // Get a reference for the week view in the layout.
-        mWeekView = (WeekView) findViewById(R.id.weekView);
 
-        // Show a toast message about the touched event.
-        mWeekView.setOnEventClickListener(this);
+    /**
+     * Set up a date time interpreter which will show short date values when in week view and long
+     * date values otherwise.
+     * @param shortDate True if the date values should be short.
+     */
+    private void setupDateTimeInterpreter(final boolean shortDate) {
+        mWeekView.setDateTimeInterpreter(new DateTimeInterpreter() {
+            @Override
+            public String interpretDate(Calendar date) {
+                SimpleDateFormat weekdayNameFormat = new SimpleDateFormat("EEE", Locale.getDefault());
+                String weekday = weekdayNameFormat.format(date.getTime());
+                SimpleDateFormat format = new SimpleDateFormat(" M/d", Locale.getDefault());
 
-        // The week view has infinite scrolling horizontally. We have to provide the events of a
-        // month every time the month changes on the week view.
-        mWeekView.setMonthChangeListener(this);
+                // All android api level do not have a standard way of getting the first letter of
+                // the week day name. Hence we get the first char programmatically.
+                // Details: http://stackoverflow.com/questions/16959502/get-one-letter-abbreviation-of-week-day-of-a-date-in-java#answer-16959657
+                if (shortDate)
+                    weekday = String.valueOf(weekday.charAt(0));
+                return weekday.toUpperCase() + format.format(date.getTime());
+            }
 
-        // Set long press listener for events.
-        mWeekView.setEventLongPressListener(this);
-
-        // Set long press listener for empty view
-        mWeekView.setEmptyViewLongPressListener(this);
-
-        // Set up a date time interpreter to interpret how the date and time will be formatted in
-        // the week view. This is optional.
-        setupDateTimeInterpreter(false);
+            @Override
+            public String interpretTime(int hour) {
+                return hour > 11 ? (hour - 12) + " PM" : (hour == 0 ? "12 AM" : hour + " AM");
+            }
+        });
     }
+
+
+    ///////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////
+
+    // Interaction With View Objects:
+
+    ///////////////////////////////////////////////////////////////////////////////
 
     @Override
     public void onBackPressed() {
@@ -241,33 +295,6 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
-    /**
-     * Set up a date time interpreter which will show short date values when in week view and long
-     * date values otherwise.
-     * @param shortDate True if the date values should be short.
-     */
-    private void setupDateTimeInterpreter(final boolean shortDate) {
-        mWeekView.setDateTimeInterpreter(new DateTimeInterpreter() {
-            @Override
-            public String interpretDate(Calendar date) {
-                SimpleDateFormat weekdayNameFormat = new SimpleDateFormat("EEE", Locale.getDefault());
-                String weekday = weekdayNameFormat.format(date.getTime());
-                SimpleDateFormat format = new SimpleDateFormat(" M/d", Locale.getDefault());
-
-                // All android api level do not have a standard way of getting the first letter of
-                // the week day name. Hence we get the first char programmatically.
-                // Details: http://stackoverflow.com/questions/16959502/get-one-letter-abbreviation-of-week-day-of-a-date-in-java#answer-16959657
-                if (shortDate)
-                    weekday = String.valueOf(weekday.charAt(0));
-                return weekday.toUpperCase() + format.format(date.getTime());
-            }
-
-            @Override
-            public String interpretTime(int hour) {
-                return hour > 11 ? (hour - 12) + " PM" : (hour == 0 ? "12 AM" : hour + " AM");
-            }
-        });
-    }
 
     protected String getEventTitle(Calendar time) {
         return String.format("Event of %02d:%02d %s/%d", time.get(Calendar.HOUR_OF_DAY), time.get(Calendar.MINUTE), time.get(Calendar.MONTH)+1, time.get(Calendar.DAY_OF_MONTH));
@@ -294,7 +321,9 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public List<? extends WeekViewEvent> onMonthChange(int newYear, int newMonth) {
-        // Populate the week view with some events.
+        // Populate the week view with some placeholder events.
+
+        // THIS IS ONE GIANT PLACEHOLDER STUB:
         List<WeekViewEvent> events = new ArrayList<WeekViewEvent>();
 
         Calendar startTime = Calendar.getInstance();
@@ -439,5 +468,22 @@ public class MainActivity extends AppCompatActivity
         return events;
     }
 
+
+    ///////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////
+
+    // Interaction With GoogleCalendarClient:
+
+    ///////////////////////////////////////////////////////////////////////////////
+
+    @Override
+    public void onEventsLoaded() {
+        mWeekView.notifyDatasetChanged();
+    }
+
+    @Override
+    public void onCalendarsLoaded() {
+
+    }
 }
 
