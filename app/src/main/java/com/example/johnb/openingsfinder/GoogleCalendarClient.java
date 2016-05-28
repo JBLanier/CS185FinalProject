@@ -27,6 +27,7 @@ public class GoogleCalendarClient {
     private static final String TAG = "GoogleCalendarClient";
 
     public ArrayList<WeekViewEvent> mCachedEvents;
+    public ArrayList<GCalendar> mCachedCalendars;
     public static ArrayList<Long> mDesiredCalendarIDs;
     private Context mContext;
 
@@ -71,8 +72,22 @@ public class GoogleCalendarClient {
     }
 
     public class GCalendar {
-        public String name;
-        public long id;
+
+        private String mName;
+        private long mId;
+
+        GCalendar(String name, long id) {
+            mName = name;
+            mId = id;
+        }
+
+        public String getName() {
+            return mName;
+        }
+
+        public long getId() {
+            return mId;
+        }
     }
 
      static class GCalendarAsyncQueryHandler extends AsyncQueryHandler {
@@ -97,23 +112,18 @@ public class GoogleCalendarClient {
 
     // Projection array. Creating indices for this array instead of doing
     // dynamic lookups improves performance.
-    public static final String[] EVENT_PROJECTION = new String[] {
+    public static final String[] CALENDAR_PROJECTION = new String[] {
             CalendarContract.Calendars._ID,                           // 0
             CalendarContract.Calendars.CALENDAR_DISPLAY_NAME,         // 1
-
 
     };
 
     // The indices for the projection array above.
-    private static final int PROJECTION_ID_INDEX = 0;
-    private static final int PROJECTION_DISPLAY_NAME_INDEX = 1;
+    private static final int CALENDAR_PROJECTION_ID_INDEX = 0;
+    private static final int CALENDAR_PROJECTION_DISPLAY_NAME_INDEX = 1;
 
 
     public void loadCalendars() {
-
-
-        //@@@ TODO:
-        // This should actually start an AsyncQueryHandler which calls onCalendarsQueryFinished when its done.
 
         if (mContext != null) {
             // Run query
@@ -128,7 +138,7 @@ public class GoogleCalendarClient {
             if (checkPermissions()) {
                 //cur = cr.query(uri, EVENT_PROJECTION, null, null, null);
                 GCalendarAsyncQueryHandler queryHandler = new GCalendarAsyncQueryHandler(cr);
-                queryHandler.startQuery(GCalendarAsyncQueryHandler.TOKEN_CALENDAR_QUERY,null,uri,EVENT_PROJECTION,null,null,null);
+                queryHandler.startQuery(GCalendarAsyncQueryHandler.TOKEN_CALENDAR_QUERY,null,uri,CALENDAR_PROJECTION,null,null,null);
 
             } else {
                 Log.d(TAG, "loadCalendars: Tried to get calendars but permissions were bad.");
@@ -143,6 +153,8 @@ public class GoogleCalendarClient {
 
         Log.d(TAG, "loadCalendars: ---------START Calendar Retreived list---------------");
 
+        mCachedCalendars = new ArrayList<>();
+
         // Use the cursor to step through the returned records
         while (cur.moveToNext()) {
             long calID = 0;
@@ -150,8 +162,12 @@ public class GoogleCalendarClient {
 
 
             // Get the field values
-            calID = cur.getLong(PROJECTION_ID_INDEX);
-            displayName = cur.getString(PROJECTION_DISPLAY_NAME_INDEX);
+            calID = cur.getLong(CALENDAR_PROJECTION_ID_INDEX);
+            displayName = cur.getString(CALENDAR_PROJECTION_DISPLAY_NAME_INDEX);
+
+            GCalendar gcal = new GCalendar(displayName,calID);
+
+            mCachedCalendars.add(gcal);
 
             Log.d(TAG, String.format("loadCalendars: CalID %d",calID));
             Log.d(TAG, "loadCalendars: Name: " + displayName);
@@ -160,10 +176,29 @@ public class GoogleCalendarClient {
         }
         Log.d(TAG, "loadCalendars: ---------END Calendar Retreived list---------------");
 
-        //Todo:
-        //Set found calendars to some variable that MainActivity can ask for.
-
         notifyCalendarsLoaded();
+    }
+
+    public static final String[] EVENT_PROJECTION = new String[] {
+            CalendarContract.Events.TITLE,
+            CalendarContract.Events.CALENDAR_ID,
+            CalendarContract.Events.EVENT_COLOR,
+            CalendarContract.Events.DTSTART,
+            CalendarContract.Events.DTEND,
+            CalendarContract.Events.ALL_DAY
+
+    };
+
+    // The indices for the projection array above.
+    private static final int EVENT_PROJECTION_TITLE_INDEX = 0;
+    private static final int EVENT_PROJECTION_CALENDAR_ID_INDEX = 1;
+    private static final int EVENT_PROJECTION_EVENT_COLOR_INDEX = 2;
+    private static final int EVENT_PROJECTION_DTSTART_INDEX = 3;
+    private static final int EVENT_PROJECTION_DTEND_INDEX = 4;
+    private static final int EVENT_PROJECTION_ALL_DAY_INDEX = 5;
+
+    public void loadEventsForYearAndMonth(int Year, int Month) {
+        //stub
     }
 
     public void onEventsQueryComplete(Cursor cur) {
@@ -173,8 +208,8 @@ public class GoogleCalendarClient {
     public void setDesiredCalendars(ArrayList<GCalendar> desiredCalendars) {
         mDesiredCalendarIDs.clear();
         for (GCalendar calendar : desiredCalendars){
-            if (!mDesiredCalendarIDs.contains(calendar.id)) {
-                mDesiredCalendarIDs.add(calendar.id);
+            if (!mDesiredCalendarIDs.contains(calendar.getId())) {
+                mDesiredCalendarIDs.add(calendar.getId());
             }
         }
     }
@@ -196,13 +231,8 @@ public class GoogleCalendarClient {
     //// TODO: 5/28/2016
     // Implement these:
 
-    public void loadEventsForYearAndMonth(int Year, int Month) {
-        //stub
-    }
-
     public ArrayList<GCalendar> getCalendarCache() {
-        // stub
-        return new ArrayList<GCalendar>();
+        return new ArrayList<>(mCachedCalendars);
     }
 
     public ArrayList<WeekViewEvent> getCachedEventsForYearAndMonth(int Year, int Month) {

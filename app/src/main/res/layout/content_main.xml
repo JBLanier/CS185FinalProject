@@ -20,7 +20,7 @@
         app:headerRowPadding="12dp"
         app:columnGap="8dp"
         app:noOfVisibleDays="3"
-        app:headerRowBackgroundColor="@color/colorPrimary"
+        app:headerRowBackgroundColor="#ffffffff"
         app:dayBackgroundColor="#05000000"
         app:todayBackgroundColor="#1848adff"
         app:headerColumnBackground="#ffffffff"

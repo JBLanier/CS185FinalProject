@@ -83,6 +83,9 @@ public class MainActivity extends AppCompatActivity
             public void onClick(View view) {
                 Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
+                if (mWeekView != null) {
+                    mWeekView.notifyDatasetChanged();
+                }
             }
         });
 
@@ -94,53 +97,6 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-    }
-
-    @Override
-    public boolean onNavigationItemSelected(MenuItem item) {
-        // Handle navigation view item clicks here.
-        int id = item.getItemId();
-
-        if (id == R.id.single_day) {
-            if (mWeekViewType != TYPE_DAY_VIEW) {
-                item.setChecked(!item.isChecked());
-                mWeekViewType = TYPE_DAY_VIEW;
-                mWeekView.setNumberOfVisibleDays(1);
-
-                // Lets change some dimensions to best fit the view.
-                mWeekView.setColumnGap((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 8, getResources().getDisplayMetrics()));
-                mWeekView.setTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12, getResources().getDisplayMetrics()));
-                mWeekView.setEventTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12, getResources().getDisplayMetrics()));
-            }
-        } else if (id == R.id.three_day) {
-            if (mWeekViewType != TYPE_THREE_DAY_VIEW) {
-                item.setChecked(!item.isChecked());
-                mWeekViewType = TYPE_THREE_DAY_VIEW;
-                mWeekView.setNumberOfVisibleDays(3);
-
-                // Lets change some dimensions to best fit the view.
-                mWeekView.setColumnGap((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 8, getResources().getDisplayMetrics()));
-                mWeekView.setTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12, getResources().getDisplayMetrics()));
-                mWeekView.setEventTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12, getResources().getDisplayMetrics()));
-            }
-        } else if (id == R.id.week) {
-            if (mWeekViewType != TYPE_WEEK_VIEW) {
-                item.setChecked(!item.isChecked());
-                mWeekViewType = TYPE_WEEK_VIEW;
-                mWeekView.setNumberOfVisibleDays(7);
-
-                // Lets change some dimensions to best fit the view.
-                mWeekView.setColumnGap((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 2, getResources().getDisplayMetrics()));
-                mWeekView.setTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 10, getResources().getDisplayMetrics()));
-                mWeekView.setEventTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 10, getResources().getDisplayMetrics()));
-            }
-        }
-
-
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        drawer.closeDrawer(GravityCompat.START);
-
-        return true;
     }
 
     private void setUpGoogleCalendarClient() {
@@ -271,7 +227,6 @@ public class MainActivity extends AppCompatActivity
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-        //setupDateTimeInterpreter(id == R.id.action_week_view);
         switch (id){
             case R.id.action_today:
                 mWeekView.goToToday();
@@ -281,8 +236,55 @@ public class MainActivity extends AppCompatActivity
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    public boolean onNavigationItemSelected(MenuItem item) {
+
+        // Handle navigation view item clicks here.
+        int id = item.getItemId();
+
+        setupDateTimeInterpreter(id == R.id.week);
+
+        if (id == R.id.single_day) {
+            if (mWeekViewType != TYPE_DAY_VIEW) {
+                item.setChecked(!item.isChecked());
+                mWeekViewType = TYPE_DAY_VIEW;
+                mWeekView.setNumberOfVisibleDays(1);
+
+                // Lets change some dimensions to best fit the view.
+                mWeekView.setColumnGap((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 8, getResources().getDisplayMetrics()));
+                mWeekView.setTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12, getResources().getDisplayMetrics()));
+                mWeekView.setEventTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12, getResources().getDisplayMetrics()));
+            }
+        } else if (id == R.id.three_day) {
+            if (mWeekViewType != TYPE_THREE_DAY_VIEW) {
+                item.setChecked(!item.isChecked());
+                mWeekViewType = TYPE_THREE_DAY_VIEW;
+                mWeekView.setNumberOfVisibleDays(3);
+
+                // Lets change some dimensions to best fit the view.
+                mWeekView.setColumnGap((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 8, getResources().getDisplayMetrics()));
+                mWeekView.setTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12, getResources().getDisplayMetrics()));
+                mWeekView.setEventTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12, getResources().getDisplayMetrics()));
+            }
+        } else if (id == R.id.week) {
+            if (mWeekViewType != TYPE_WEEK_VIEW) {
+                item.setChecked(!item.isChecked());
+                mWeekViewType = TYPE_WEEK_VIEW;
+                mWeekView.setNumberOfVisibleDays(7);
+
+                // Lets change some dimensions to best fit the view.
+                mWeekView.setColumnGap((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 2, getResources().getDisplayMetrics()));
+                mWeekView.setTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 10, getResources().getDisplayMetrics()));
+                mWeekView.setEventTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 10, getResources().getDisplayMetrics()));
+            }
+        }
 
 
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        drawer.closeDrawer(GravityCompat.START);
+
+        return true;
+    }
 
     protected String getEventTitle(Calendar time) {
         return String.format("Event of %02d:%02d %s/%d", time.get(Calendar.HOUR_OF_DAY), time.get(Calendar.MINUTE), time.get(Calendar.MONTH)+1, time.get(Calendar.DAY_OF_MONTH));
@@ -310,6 +312,8 @@ public class MainActivity extends AppCompatActivity
     @Override
     public List<? extends WeekViewEvent> onMonthChange(int newYear, int newMonth) {
         // Populate the week view with some placeholder events.
+
+        Toast.makeText(this, String.format("Year :%d, Month: %d", newYear, newMonth),Toast.LENGTH_SHORT).show();
 
         // THIS IS ONE GIANT PLACEHOLDER STUB:
         List<WeekViewEvent> events = new ArrayList<WeekViewEvent>();
