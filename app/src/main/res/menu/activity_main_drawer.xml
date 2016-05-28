@@ -19,8 +19,20 @@
             android:icon="@drawable/ic_menu_manage"
             android:title="Tools" />
     </group>
-
-    <item android:title="Communicate">
+    <item android:title="Calendar Display">
+        <menu>
+            <item
+                android:id="@+id/single_day"
+                android:title="Single Day" />
+            <item
+                android:id="@+id/three_day"
+                android:title="Three Days" />
+            <item
+                android:id="@+id/week"
+                android:title="Full Week" />
+        </menu>
+    </item>
+    <item android:title="Calendars">
         <menu>
             <item
                 android:id="@+id/nav_share"
