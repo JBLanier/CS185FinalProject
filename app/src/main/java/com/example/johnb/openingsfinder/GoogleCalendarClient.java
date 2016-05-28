@@ -1,6 +1,7 @@
 package com.example.johnb.openingsfinder;
 
 import android.Manifest;
+import android.content.AsyncQueryHandler;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -10,6 +11,7 @@ import android.os.Build;
 import android.provider.CalendarContract;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.media.session.MediaSessionCompat;
 import android.util.Log;
 
 import com.alamkanak.weekview.WeekViewEvent;
@@ -73,6 +75,26 @@ public class GoogleCalendarClient {
         public long id;
     }
 
+     static class GCalendarAsyncQueryHandler extends AsyncQueryHandler {
+        public static final int TOKEN_CALENDAR_QUERY = 1;
+        public static final int TOKEN_EVENTS_QUERY = 2;
+
+
+        public GCalendarAsyncQueryHandler(ContentResolver cr) {
+            super(cr);
+        }
+
+        @Override
+        protected void onQueryComplete(int token, Object cookie, Cursor cursor) {
+           if (token == TOKEN_CALENDAR_QUERY) {
+               GoogleCalendarClient.getInstance().onCalendarsQueryComplete(cursor);
+           } else if (token == TOKEN_EVENTS_QUERY) {
+               GoogleCalendarClient.getInstance().onEventsQueryComplete(cursor);
+           }
+        }
+
+    }
+
     // Projection array. Creating indices for this array instead of doing
     // dynamic lookups improves performance.
     public static final String[] EVENT_PROJECTION = new String[] {
@@ -104,29 +126,9 @@ public class GoogleCalendarClient {
 
             // Submit the query and get a Cursor object back.
             if (checkPermissions()) {
-                cur = cr.query(uri, EVENT_PROJECTION, null, null, null);
-
-                Log.d(TAG, "loadCalendars: ---------START Calendar Retreived list---------------");
-
-                // Use the cursor to step through the returned records
-                while (cur.moveToNext()) {
-                    long calID = 0;
-                    String displayName = null;
-
-
-                    // Get the field values
-                    calID = cur.getLong(PROJECTION_ID_INDEX);
-                    displayName = cur.getString(PROJECTION_DISPLAY_NAME_INDEX);
-
-                    Log.d(TAG, String.format("loadCalendars: CalID %d",calID));
-                    Log.d(TAG, "loadCalendars: Name: " + displayName);
-                 //   Log.d(TAG, "loadCalendars: accountName: " + accountName);
-                 //   Log.d(TAG, "loadCalendars: ownername: " + ownerName);
-                }
-                Log.d(TAG, "loadCalendars: ---------END Calendar Retreived list---------------");
-
-                // this should be called when the asynchronous query completes
-                onCalendarsQueryFinished();
+                //cur = cr.query(uri, EVENT_PROJECTION, null, null, null);
+                GCalendarAsyncQueryHandler queryHandler = new GCalendarAsyncQueryHandler(cr);
+                queryHandler.startQuery(GCalendarAsyncQueryHandler.TOKEN_CALENDAR_QUERY,null,uri,EVENT_PROJECTION,null,null,null);
 
             } else {
                 Log.d(TAG, "loadCalendars: Tried to get calendars but permissions were bad.");
@@ -137,12 +139,35 @@ public class GoogleCalendarClient {
         }
     }
 
-    public void onCalendarsQueryFinished() {
+    public void onCalendarsQueryComplete(Cursor cur) {
+
+        Log.d(TAG, "loadCalendars: ---------START Calendar Retreived list---------------");
+
+        // Use the cursor to step through the returned records
+        while (cur.moveToNext()) {
+            long calID = 0;
+            String displayName = null;
+
+
+            // Get the field values
+            calID = cur.getLong(PROJECTION_ID_INDEX);
+            displayName = cur.getString(PROJECTION_DISPLAY_NAME_INDEX);
+
+            Log.d(TAG, String.format("loadCalendars: CalID %d",calID));
+            Log.d(TAG, "loadCalendars: Name: " + displayName);
+            //   Log.d(TAG, "loadCalendars: accountName: " + accountName);
+            //   Log.d(TAG, "loadCalendars: ownername: " + ownerName);
+        }
+        Log.d(TAG, "loadCalendars: ---------END Calendar Retreived list---------------");
 
         //Todo:
         //Set found calendars to some variable that MainActivity can ask for.
 
         notifyCalendarsLoaded();
+    }
+
+    public void onEventsQueryComplete(Cursor cur) {
+
     }
 
     public void setDesiredCalendars(ArrayList<GCalendar> desiredCalendars) {
