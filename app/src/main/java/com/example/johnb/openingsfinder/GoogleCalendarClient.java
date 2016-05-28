@@ -37,6 +37,10 @@ public class GoogleCalendarClient {
 
     private static GoogleCalendarClient mInstance = null;
 
+    private GoogleCalendarClient() {
+        //Constructor is private, call getInstance instead
+    }
+
     public static GoogleCalendarClient getInstance() {
         if (mInstance == null) {
             mInstance = new GoogleCalendarClient();
