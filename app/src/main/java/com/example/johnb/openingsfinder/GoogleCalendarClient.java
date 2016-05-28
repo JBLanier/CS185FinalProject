@@ -97,8 +97,7 @@ public class GoogleCalendarClient {
             String selection = "((" + CalendarContract.Calendars.ACCOUNT_NAME + " = ?) AND ("
                     + CalendarContract.Calendars.ACCOUNT_TYPE + " = ?) AND ("
                     + CalendarContract.Calendars.OWNER_ACCOUNT + " = ?))";
-            String[] selectionArgs = new String[]{"johnblanier@gmail.com", "com.google",
-                    "johnblanier@gmail.com"};
+
             // Submit the query and get a Cursor object back.
             if (checkPermissions()) {
                 cur = cr.query(uri, EVENT_PROJECTION, null, null, null);
@@ -165,4 +164,20 @@ public class GoogleCalendarClient {
                 || (event.getEndTime().get(Calendar.YEAR) == year && event.getEndTime().get(Calendar.MONTH) == month - 1);
     }
 
+    //// TODO: 5/28/2016
+    // Implement these:
+
+    public void loadEventsForYearAndMonth(int Year, int Month) {
+        //stub
+    }
+
+    public ArrayList<GCalendar> getCalendarCache() {
+        // stub
+        return new ArrayList<GCalendar>();
+    }
+
+    public ArrayList<WeekViewEvent> getCachedEventsForYearAndMonth(int Year, int Month) {
+        //stub
+        return new ArrayList<WeekViewEvent>();
+    }
 }
