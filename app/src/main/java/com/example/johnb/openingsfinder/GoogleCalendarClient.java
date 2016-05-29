@@ -12,6 +12,7 @@ import android.os.Build;
 import android.provider.CalendarContract;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
+import android.widget.ArrayAdapter;
 
 import com.alamkanak.weekview.WeekViewEvent;
 
@@ -301,7 +302,7 @@ public class GoogleCalendarClient {
 
             //Create WeekViewEvent
 
-            WeekViewEvent event = new WeekViewEvent(getNewID(),displayName,startTime,endTime);
+            WeekViewEvent event = new WeekViewEvent(getNewID(calID),displayName,startTime,endTime);
             //Todo
             //change to actual color
 
@@ -313,7 +314,7 @@ public class GoogleCalendarClient {
         // Add stub event at end or array with Year and Month information
         Calendar stubCalender = Calendar.getInstance();
         stubCalender.setTimeInMillis(1);
-        WeekViewEvent stubEvent = new WeekViewEvent(getNewID(),yearandMonth,stubCalender,stubCalender);
+        WeekViewEvent stubEvent = new WeekViewEvent(getNewID(-1),yearandMonth,stubCalender,stubCalender);
         events.add(stubEvent);
 
         addMonthToEventsCache(events);
@@ -350,10 +351,11 @@ public class GoogleCalendarClient {
     public ArrayList<WeekViewEvent> getCachedEventsForYearAndMonth(int Year, int Month) {
         for (ArrayList<WeekViewEvent> monthArray : mCachedEvents) {
             String requestMonth = stringFromYearAndMonth(Year,Month);
-            String oldMonth = monthArray.get(monthArray.size()-1).getName();
+            String cacheMonth = monthArray.get(monthArray.size()-1).getName();
 
-            if (oldMonth.equalsIgnoreCase(requestMonth)) {
+            if (cacheMonth.equalsIgnoreCase(requestMonth)) {
                 ArrayList<WeekViewEvent> returnArray = new ArrayList<>(monthArray);
+                returnArray = filterEventsForDesiredCalendars(returnArray);
                 return returnArray;
             }
         }
@@ -397,13 +399,20 @@ public class GoogleCalendarClient {
         }
     }
 
-    private String stringFromYearAndMonth(int year, int month) {
-        return String.format("%d %d", year, month);
+    private long getNewID(long CalID) {
+        mIDCounter ++;
+        String idString = String.format("%d00000%d",CalID,mIDCounter);
+        long newID = Long.parseLong(idString);
+        return newID;
     }
 
-    private long getNewID() {
-        mIDCounter ++;
-        return mIDCounter;
+    private long calIDFromWeekViewEvent(WeekViewEvent event) {
+        long eventID = event.getId();
+        String eventIDString = String.format("%d",eventID);
+        String[] s = eventIDString.split("00000");
+        String CalIdString = s[0];
+        long CalID = Long.parseLong(CalIdString);
+        return CalID;
     }
 
     public String WeekViewEventListToString(ArrayList<WeekViewEvent> a) {
@@ -418,4 +427,21 @@ public class GoogleCalendarClient {
         return s;
     }
 
+    private String stringFromYearAndMonth(int year, int month) {
+        return String.format("%d %d", year, month);
+    }
+
+    private ArrayList<WeekViewEvent> filterEventsForDesiredCalendars(ArrayList<WeekViewEvent> events) {
+        ArrayList<WeekViewEvent> filteredEvents = new ArrayList<>();
+
+            for (WeekViewEvent event : events) {
+                long eventCalID = calIDFromWeekViewEvent(event);
+                Log.d(TAG, "filterEventsForDesiredCalendars: CALID: " + eventCalID);
+                if(mDesiredCalendarIDs.contains(eventCalID) || eventCalID == -1) {
+                    filteredEvents.add(event);
+                }
+            }
+
+        return filteredEvents;
+    }
 }
