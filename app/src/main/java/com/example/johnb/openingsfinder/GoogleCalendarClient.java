@@ -6,29 +6,62 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.CalendarContract;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.support.v4.media.session.MediaSessionCompat;
 import android.util.Log;
 
 import com.alamkanak.weekview.WeekViewEvent;
 
+import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by John B. Lanier on 5/27/2016.
  */
 public class GoogleCalendarClient {
 
+    // Projection array. Creating indices for this array instead of doing
+    // dynamic lookups improves performance.
+    public static final String[] CALENDAR_PROJECTION = new String[] {
+            CalendarContract.Calendars._ID,                           // 0
+            CalendarContract.Calendars.CALENDAR_DISPLAY_NAME,         // 1
+
+    };
+
+    // The indices for the projection array above.
+    private static final int CALENDAR_PROJECTION_ID_INDEX = 0;
+    private static final int CALENDAR_PROJECTION_DISPLAY_NAME_INDEX = 1;
+
+    public static final String[] EVENTS_PROJECTION = new String[] {
+            CalendarContract.Events.TITLE,
+            CalendarContract.Events.CALENDAR_ID,
+            CalendarContract.Events.DISPLAY_COLOR,
+            CalendarContract.Events.DTSTART,
+            CalendarContract.Events.DTEND,
+            CalendarContract.Events.ALL_DAY
+
+    };
+
+    // The indices for the projection array above.
+    private static final int EVENTS_PROJECTION_TITLE_INDEX = 0;
+    private static final int EVENTS_PROJECTION_CALENDAR_ID_INDEX = 1;
+    private static final int EVENTS_PROJECTION_DISPLAY_COLOR_INDEX = 2;
+    private static final int EVENTS_PROJECTION_DTSTART_INDEX = 3;
+    private static final int EVENTS_PROJECTION_DTEND_INDEX = 4;
+    private static final int EVENTS_PROJECTION_ALL_DAY_INDEX = 5;
+
     private static final String TAG = "GoogleCalendarClient";
 
-    public ArrayList<WeekViewEvent> mCachedEvents;
-    public ArrayList<GCalendar> mCachedCalendars;
-    public static ArrayList<Long> mDesiredCalendarIDs;
+    private static long mIDCounter = 0;
+
+    private ArrayList<ArrayList<WeekViewEvent>> mCachedEvents;
+    private ArrayList<GCalendar> mCachedCalendars;
+    private static ArrayList<Long> mDesiredCalendarIDs;
     private Context mContext;
 
     private DataChangedListener mDataChangedListener;
@@ -42,6 +75,9 @@ public class GoogleCalendarClient {
 
     private GoogleCalendarClient() {
         //Constructor is private, call getInstance instead
+        mDesiredCalendarIDs = new ArrayList<>();
+        mCachedCalendars = new ArrayList<>();
+        mCachedEvents = new ArrayList<>();
     }
 
     public static GoogleCalendarClient getInstance() {
@@ -90,7 +126,7 @@ public class GoogleCalendarClient {
         }
     }
 
-     static class GCalendarAsyncQueryHandler extends AsyncQueryHandler {
+    static class GCalendarAsyncQueryHandler extends AsyncQueryHandler {
         public static final int TOKEN_CALENDAR_QUERY = 1;
         public static final int TOKEN_EVENTS_QUERY = 2;
 
@@ -104,24 +140,11 @@ public class GoogleCalendarClient {
            if (token == TOKEN_CALENDAR_QUERY) {
                GoogleCalendarClient.getInstance().onCalendarsQueryComplete(cursor);
            } else if (token == TOKEN_EVENTS_QUERY) {
-               GoogleCalendarClient.getInstance().onEventsQueryComplete(cursor);
+               GoogleCalendarClient.getInstance().onEventsQueryComplete(cursor, (String) cookie);
            }
         }
 
     }
-
-    // Projection array. Creating indices for this array instead of doing
-    // dynamic lookups improves performance.
-    public static final String[] CALENDAR_PROJECTION = new String[] {
-            CalendarContract.Calendars._ID,                           // 0
-            CalendarContract.Calendars.CALENDAR_DISPLAY_NAME,         // 1
-
-    };
-
-    // The indices for the projection array above.
-    private static final int CALENDAR_PROJECTION_ID_INDEX = 0;
-    private static final int CALENDAR_PROJECTION_DISPLAY_NAME_INDEX = 1;
-
 
     public void loadCalendars() {
 
@@ -150,7 +173,7 @@ public class GoogleCalendarClient {
 
     public void onCalendarsQueryComplete(Cursor cur) {
 
-        Log.d(TAG, "loadCalendars: ---------START Calendar Retreived list---------------");
+        Log.d(TAG, "loadCalendars: ---------START Calendar Retrieved list---------------");
 
         mCachedCalendars = new ArrayList<>();
 
@@ -173,30 +196,15 @@ public class GoogleCalendarClient {
             //   Log.d(TAG, "loadCalendars: accountName: " + accountName);
             //   Log.d(TAG, "loadCalendars: ownername: " + ownerName);
         }
-        Log.d(TAG, "loadCalendars: ---------END Calendar Retreived list---------------");
 
+        Log.d(TAG, "loadCalendars: ---------END Calendar Retrieved list---------------");
+        
         notifyCalendarsLoaded();
+        loadEventsForYearAndMonth(2016,5);
     }
 
-    public static final String[] EVENTS_PROJECTION = new String[] {
-            CalendarContract.Events.TITLE,
-            CalendarContract.Events.CALENDAR_ID,
-            CalendarContract.Events.EVENT_COLOR,
-            CalendarContract.Events.DTSTART,
-            CalendarContract.Events.DTEND,
-            CalendarContract.Events.ALL_DAY
-
-    };
-
-    // The indices for the projection array above.
-    private static final int EVENTS_PROJECTION_TITLE_INDEX = 0;
-    private static final int EVENTS_PROJECTION_CALENDAR_ID_INDEX = 1;
-    private static final int EVENTS_PROJECTION_EVENT_COLOR_INDEX = 2;
-    private static final int EVENTS_PROJECTION_DTSTART_INDEX = 3;
-    private static final int EVENTS_PROJECTION_DTEND_INDEX = 4;
-    private static final int EVENTS_PROJECTION_ALL_DAY_INDEX = 5;
-
     public void loadEventsForYearAndMonth(int Year, int Month) {
+        Log.d(TAG, "loadEventsForYearAndMonth: called");
         if (mContext != null) {
             // Run query
             Cursor cur = null;
@@ -204,27 +212,29 @@ public class GoogleCalendarClient {
             Uri uri = CalendarContract.Events.CONTENT_URI;
 
             //Months entered (from WeekView) start at 1, we want to start at 0
-            Month -= 1;
+            int correctedMonth = Month -1;
 
             //Set up endYear and endMonth
             int endYear = Year;
-            int endMonth = Month + 1;
-            if (Month == 11) {
+            int endMonth = correctedMonth + 1;
+            if (correctedMonth == 11) {
                 endYear += 1;
                 endMonth = 0;
             }
 
             Calendar c_start= Calendar.getInstance();
-            c_start.set(Year,Month,0,0,0); //Note that months start from 0 (January)
+            c_start.set(Year,correctedMonth,0,0,0); //Note that months start from 0 (January)
             Calendar c_end= Calendar.getInstance();
             c_end.set(endYear,endMonth,0,0,0); //Note that months start from 0 (January)
 
             String selection = "((dtstart >= "+c_start.getTimeInMillis()+") AND (dtend <= "+c_end.getTimeInMillis()+"))";
 
+            String yearAndMonth = stringFromYearAndMonth(Year,Month);
+
             // Submit the query and get a Cursor object back.
             if (checkPermissions()) {
                 GCalendarAsyncQueryHandler queryHandler = new GCalendarAsyncQueryHandler(cr);
-                queryHandler.startQuery(GCalendarAsyncQueryHandler.TOKEN_EVENTS_QUERY,null,uri,EVENTS_PROJECTION,selection,null,null);
+                queryHandler.startQuery(GCalendarAsyncQueryHandler.TOKEN_EVENTS_QUERY,yearAndMonth,uri,EVENTS_PROJECTION,selection,null,null);
 
             } else {
                 Log.d(TAG, "loadEventsForYearAndMonth: Tried to get events but permissions were bad.");
@@ -235,33 +245,79 @@ public class GoogleCalendarClient {
         }
     }
 
-    public void onEventsQueryComplete(Cursor cur) {
-        Log.d(TAG, "onEventsQueryComplete: ---------START Events Retreived list---------------");
+    public void onEventsQueryComplete(Cursor cur, String yearandMonth) {
+        Log.d(TAG, "onEventsQueryComplete: ---------START Events Retrieved list---------------");
 
-        mCachedEvents = new ArrayList<>();
+        ArrayList<WeekViewEvent> events = new ArrayList<>();
 
         // Use the cursor to step through the returned records
         while (cur.moveToNext()) {
             long calID = 0;
             String displayName = null;
-
+            int colorInt = 0;
+            long DTStart = 0;
+            long DTEnd = 0;
+            int AllDay = -1;
 
             // Get the field values
             calID = cur.getLong(EVENTS_PROJECTION_CALENDAR_ID_INDEX);
             displayName = cur.getString(EVENTS_PROJECTION_TITLE_INDEX);
+            colorInt = cur.getInt(EVENTS_PROJECTION_DISPLAY_COLOR_INDEX);
+            DTStart = cur.getLong(EVENTS_PROJECTION_DTSTART_INDEX);
+            DTEnd = cur.getLong(EVENTS_PROJECTION_DTEND_INDEX);
+            AllDay = cur.getInt(EVENTS_PROJECTION_ALL_DAY_INDEX);
 
-            GCalendar gcal = new GCalendar(displayName,calID);
+            //Change color to hexadecimal
+            String hexColor = String.format("#%06X", (0xFFFFFF & colorInt));
 
-            mCachedCalendars.add(gcal);
+            //Create Calendars for dates
+            Calendar startTime = Calendar.getInstance();
+            startTime.setTimeInMillis(DTStart);
 
-            Log.d(TAG, String.format(": CalID %d",calID));
+            Calendar endTime = Calendar.getInstance();
+            endTime.setTimeInMillis(DTEnd);
+
+            //AllDay events go from 4pm of the previous day to 4pm of the actual events' day.
+            //Fix them so they go from 12AM actual event day to 12AM next day
+            if (AllDay == 1) {
+                startTime.setTimeInMillis(endTime.getTimeInMillis());
+                startTime.set(Calendar.HOUR_OF_DAY, 0);
+                startTime.set(Calendar.MINUTE, 0);
+                startTime.set(Calendar.SECOND, 0);
+                startTime.set(Calendar.MILLISECOND, 0);
+
+                endTime.setTimeInMillis(startTime.getTimeInMillis() + TimeUnit.DAYS.toMillis(1));
+
+            }
+
+            //Log Stuff
+          //  Log.d(TAG, String.format(": CalID %d",calID));
             Log.d(TAG, ": EVENT Name: " + displayName);
-            //   Log.d(TAG, "loadCalendars: accountName: " + accountName);
-            //   Log.d(TAG, "loadCalendars: ownername: " + ownerName);
-        }
-        Log.d(TAG, "OnEventsQueryComplete: ---------END Events Retreived list---------------");
+            Log.d(TAG, ":  color: " + hexColor);
+            //Log.d(TAG, "onEventsQueryComplete: StartTime: " + DateFormat.getDateTimeInstance().format(startTime.getTime()));
+            //Log.d(TAG, "onEventsQueryComplete: EndTime: " + DateFormat.getDateTimeInstance().format(endTime.getTime()));
+           // Log.d(TAG, "onEventsQueryComplete: AllDay: " + AllDay);
 
-        notifyCalendarsLoaded();
+
+            //Create WeekViewEvent
+
+            WeekViewEvent event = new WeekViewEvent(getNewID(),displayName,startTime,endTime);
+            //Todo
+            //change to actual color
+
+            event.setColor(colorInt);
+            events.add(event);
+        }
+        Log.d(TAG, "OnEventsQueryComplete: ---------END Events Retrieved list---------------");
+
+        // Add stub event at end or array with Year and Month information
+        Calendar stubCalender = Calendar.getInstance();
+        stubCalender.setTimeInMillis(1);
+        WeekViewEvent stubEvent = new WeekViewEvent(getNewID(),yearandMonth,stubCalender,stubCalender);
+        events.add(stubEvent);
+
+        addMonthToEventsCache(events);
+        notifyEventsLoaded();
     }
 
     public void setDesiredCalendars(ArrayList<GCalendar> desiredCalendars) {
@@ -287,15 +343,79 @@ public class GoogleCalendarClient {
                 || (event.getEndTime().get(Calendar.YEAR) == year && event.getEndTime().get(Calendar.MONTH) == month - 1);
     }
 
-    //// TODO: 5/28/2016
-    // Implement these:
-
     public ArrayList<GCalendar> getCalendarCache() {
         return new ArrayList<>(mCachedCalendars);
     }
 
     public ArrayList<WeekViewEvent> getCachedEventsForYearAndMonth(int Year, int Month) {
-        //stub
+        for (ArrayList<WeekViewEvent> monthArray : mCachedEvents) {
+            String requestMonth = stringFromYearAndMonth(Year,Month);
+            String oldMonth = monthArray.get(monthArray.size()-1).getName();
+
+            if (oldMonth.equalsIgnoreCase(requestMonth)) {
+                ArrayList<WeekViewEvent> returnArray = new ArrayList<>(monthArray);
+                return returnArray;
+            }
+        }
         return new ArrayList<WeekViewEvent>();
     }
+
+    private void addMonthToEventsCache(ArrayList<WeekViewEvent> newMonthArray) {
+
+        Log.d(TAG, "addMonthToEventsCache: \n\nADDING MONTH TO CACHE:\n");
+        Log.d(TAG, WeekViewEventListToString(newMonthArray));
+
+        if (mCachedEvents.size() == 0) {
+            Log.d(TAG, "addMonthToEventsCache: Cache is empty, adding month without comparing anything");
+            mCachedEvents.add(newMonthArray);
+        } else {
+
+            int removeIndex = -1;
+            for (ArrayList<WeekViewEvent> monthArray : mCachedEvents) {
+
+                    String oldMonth = monthArray.get(monthArray.size() - 1).getName();
+                    String newMonth = newMonthArray.get(newMonthArray.size() - 1).getName();
+
+                    if (oldMonth.equalsIgnoreCase(newMonth)) {
+                        removeIndex = mCachedEvents.indexOf(monthArray);
+                        Log.d(TAG, "addMonthToEventsCache: Month was already present, removed old one");
+                    }
+
+            }
+
+            if (removeIndex != -1) {
+                mCachedEvents.remove(removeIndex);
+            }
+
+            //Add new month to cache
+            mCachedEvents.add(newMonthArray);
+
+        }
+        Log.d(TAG, "NEW CACHE:");
+        for (ArrayList<WeekViewEvent> monthArray : mCachedEvents) {
+            Log.d(TAG, WeekViewEventListToString(monthArray));
+        }
+    }
+
+    private String stringFromYearAndMonth(int year, int month) {
+        return String.format("%d %d", year, month);
+    }
+
+    private long getNewID() {
+        mIDCounter ++;
+        return mIDCounter;
+    }
+
+    public String WeekViewEventListToString(ArrayList<WeekViewEvent> a) {
+        String s = "\n----ArrayList----\n";
+        if (a.size() == 0) {
+            s += "EMPTY ARRAYLIST!!!";
+        }
+        for (WeekViewEvent event: a) {
+           s += event.getName();
+           s += ",\n";
+        }
+        return s;
+    }
+
 }

@@ -14,7 +14,7 @@
         android:layout_height="match_parent"
         app:eventTextColor="@android:color/white"
         app:textSize="12sp"
-        app:hourHeight="60dp"
+        app:hourHeight="30dp"
         app:headerColumnPadding="8dp"
         app:headerColumnTextColor="@color/colorPrimary"
         app:headerRowPadding="12dp"
@@ -24,5 +24,8 @@
         app:dayBackgroundColor="#05000000"
         app:todayBackgroundColor="#1848adff"
         app:headerColumnBackground="#ffffffff"
-        app:todayHeaderTextColor="@color/colorPrimaryDark" />
+        app:todayHeaderTextColor="@color/colorPrimaryDark"
+        app:xScrollingSpeed="0.8"
+        app:showNowLine="true"
+        app:nowLineThickness="5dp"/>
 </RelativeLayout>

@@ -29,6 +29,7 @@ import com.alamkanak.weekview.WeekViewEvent;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -42,6 +43,8 @@ public class MainActivity extends AppCompatActivity
         MonthLoader.MonthChangeListener,
         GoogleCalendarClient.DataChangedListener {
 
+    private static final String TAG = "MainActivity";
+
     private static final int PERMISSIONS_REQUEST_READ_WRITE_CALENDAR = 1234;
 
     private static final int TYPE_DAY_VIEW = 1;
@@ -49,8 +52,8 @@ public class MainActivity extends AppCompatActivity
     private static final int TYPE_WEEK_VIEW = 3;
     private int mWeekViewType = TYPE_THREE_DAY_VIEW;
 
-    private WeekView mWeekView;
 
+    private WeekView mWeekView;
 
     ///////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////
@@ -101,6 +104,7 @@ public class MainActivity extends AppCompatActivity
 
     private void setUpGoogleCalendarClient() {
         GoogleCalendarClient.getInstance().setContext(this);
+        GoogleCalendarClient.getInstance().setDataChangedListener(this);
         GoogleCalendarClient.getInstance().loadCalendars();
     }
 
@@ -120,7 +124,6 @@ public class MainActivity extends AppCompatActivity
 
         // Set long press listener for empty view
         mWeekView.setEmptyViewLongPressListener(this);
-
         // Set up a date time interpreter to interpret how the date and time will be formatted in
         // the week view. This is optional.
         setupDateTimeInterpreter(false);
@@ -315,6 +318,22 @@ public class MainActivity extends AppCompatActivity
 
         Toast.makeText(this, String.format("Year :%d, Month: %d", newYear, newMonth),Toast.LENGTH_SHORT).show();
 
+        ArrayList<WeekViewEvent> events = GoogleCalendarClient.getInstance().getCachedEventsForYearAndMonth(newYear,newMonth);
+
+        if (events.size() == 0) {
+            GoogleCalendarClient.getInstance().loadEventsForYearAndMonth(newYear, newMonth);
+        } else {
+            events.remove(events.size() - 1);
+        }
+
+
+
+        Log.d(TAG, "onMonthChange: Requested " + newYear + ", " + newMonth + ", got: ");
+        Log.d(TAG, GoogleCalendarClient.getInstance().WeekViewEventListToString(events));
+
+        return events;
+
+        /*
         // THIS IS ONE GIANT PLACEHOLDER STUB:
         List<WeekViewEvent> events = new ArrayList<WeekViewEvent>();
 
@@ -458,6 +477,7 @@ public class MainActivity extends AppCompatActivity
         events.add(event);
 
         return events;
+        */
     }
 
 
