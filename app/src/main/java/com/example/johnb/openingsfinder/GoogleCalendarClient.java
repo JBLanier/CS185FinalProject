@@ -14,6 +14,7 @@ import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.widget.ArrayAdapter;
 
+
 import com.alamkanak.weekview.WeekViewEvent;
 
 import java.text.DateFormat;

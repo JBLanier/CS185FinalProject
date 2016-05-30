@@ -6,11 +6,11 @@ import android.graphics.RectF;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.util.TypedValue;
+import android.view.SubMenu;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -20,6 +20,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.CheckedTextView;
+import android.widget.ListView;
 import android.widget.Toast;
 
 import com.alamkanak.weekview.DateTimeInterpreter;
@@ -29,7 +33,6 @@ import com.alamkanak.weekview.WeekViewEvent;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -55,6 +58,7 @@ public class MainActivity extends AppCompatActivity
 
     private WeekView mWeekView;
 
+
     ///////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////
 
@@ -72,7 +76,44 @@ public class MainActivity extends AppCompatActivity
            setUpGoogleCalendarClient();
         }
         setUpWeekView();
+        //addDrawerItems();
+
+
+
+
     }
+
+
+    /*private void addDrawerItems() {
+        String[] osArray = { "Bluetooth", "Reply to Calls", "Reply to sms", "customise message"};
+        ListView mDrawerList = (ListView) findViewById(R.id.listView);
+
+        ArrayAdapter mAdapter = new ArrayAdapter<String>(this,
+                android.R.layout.simple_list_item_multiple_choice, osArray);
+
+        mDrawerList.setAdapter(mAdapter);
+
+        mDrawerList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
+                CheckedTextView ctv = (CheckedTextView)view;
+                if (ctv.isChecked()){
+                    Toast.makeText(getApplicationContext(),"uncheckd",Toast.LENGTH_LONG).show();
+                }
+                else {
+                    Toast.makeText(getApplicationContext(),"checked",Toast.LENGTH_LONG).show();
+                }
+
+            }
+        });
+    }
+
+
+*/
+
+
+
 
     private void setUpStandardNavigationViewObjects() {
 
@@ -81,14 +122,12 @@ public class MainActivity extends AppCompatActivity
         setSupportActionBar(toolbar);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        assert fab != null;
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-                if (mWeekView != null) {
-                    mWeekView.notifyDatasetChanged();
-                }
+
+                onDurationSet(view);
             }
         });
 
@@ -106,6 +145,7 @@ public class MainActivity extends AppCompatActivity
         GoogleCalendarClient.getInstance().setContext(this);
         GoogleCalendarClient.getInstance().setDataChangedListener(this);
         GoogleCalendarClient.getInstance().loadCalendars();
+
     }
 
     void setUpWeekView() {
@@ -313,7 +353,7 @@ public class MainActivity extends AppCompatActivity
         // Populate the week view with some placeholder events.
 
         //// TODO: 5/29/2016 Remove this line at some point:
-        Toast.makeText(this, String.format("Year :%d, Month: %d", newYear, newMonth),Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, String.format("Year :%d, Month: %d", newYear, newMonth),Toast.LENGTH_SHORT).show();
 
         ArrayList<WeekViewEvent> events = GoogleCalendarClient.getInstance().getCachedEventsForYearAndMonth(newYear,newMonth);
 
@@ -347,10 +387,31 @@ public class MainActivity extends AppCompatActivity
     public void onCalendarsLoaded() {
         //// TODO: 5/29/2016 Do something with this:
         ArrayList<GoogleCalendarClient.GCalendar> calendars = GoogleCalendarClient.getInstance().getCalendarCache();
-
         //this is to initially show all calendars so you know everything working, change this to work how you want.
         GoogleCalendarClient.getInstance().setDesiredCalendars(calendars);
         mWeekView.notifyDatasetChanged();
+        NavigationView navView = (NavigationView)findViewById(R.id.nav_view);
+        Menu menu = navView.getMenu();
+        SubMenu subMenu = menu.getItem(1).getSubMenu();
+
+        for(GoogleCalendarClient.GCalendar g : calendars ){
+            subMenu.add(g.getName());
+        }
+
+    }
+
+    public void onDurationSet(final View view) {
+        NewEventFragment eventFragment = new NewEventFragment();
+        eventFragment.setDoneListener(new NewEventFragment.OnDoneListener(){
+            @Override
+            public void OnDone(int durationInMinutes){
+                Toast.makeText(getApplicationContext(), "" + durationInMinutes,Toast.LENGTH_SHORT).show();
+
+            }
+        });
+        eventFragment.show(getFragmentManager(),"newEvent");
+
+
     }
 }
 
