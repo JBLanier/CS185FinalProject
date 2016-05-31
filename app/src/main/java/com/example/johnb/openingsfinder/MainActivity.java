@@ -54,9 +54,13 @@ public class MainActivity extends AppCompatActivity
     private static final int TYPE_THREE_DAY_VIEW = 2;
     private static final int TYPE_WEEK_VIEW = 3;
     private int mWeekViewType = TYPE_THREE_DAY_VIEW;
-
+    private static boolean findTimes = false;
+    private static final int MENU_TODAY = Menu.FIRST;
+    private static final int MENU_LIST = Menu.FIRST + 1;
+    private static final int MENU_EXIT_EDIT = Menu.FIRST + 2;
 
     private WeekView mWeekView;
+    private boolean inEditMode = false;
 
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -123,11 +127,18 @@ public class MainActivity extends AppCompatActivity
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         assert fab != null;
+        fab.setImageResource(R.drawable.ic_menu_add);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
-                onDurationSet(view);
+                if(inEditMode){
+                    GoogleCalendarClient.getInstance().setDuration(0);
+                    mWeekView.notifyDatasetChanged();
+                    exitEditMode();
+                }
+                else{
+                    onDurationSet(view);
+                }
             }
         });
 
@@ -261,8 +272,10 @@ public class MainActivity extends AppCompatActivity
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);
+
         return true;
     }
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -274,6 +287,7 @@ public class MainActivity extends AppCompatActivity
             case R.id.action_today:
                 mWeekView.goToToday();
                 return true;
+
         }
 
         return super.onOptionsItemSelected(item);
@@ -405,13 +419,28 @@ public class MainActivity extends AppCompatActivity
         eventFragment.setDoneListener(new NewEventFragment.OnDoneListener(){
             @Override
             public void OnDone(int durationInMinutes){
-                Toast.makeText(getApplicationContext(), "" + durationInMinutes,Toast.LENGTH_SHORT).show();
-
+                long durationInMillis = durationInMinutes*60*1000;
+                GoogleCalendarClient.getInstance().setDuration(durationInMillis);
+                mWeekView.notifyDatasetChanged();
+                if(durationInMillis != 0)
+                    enterEditMode();
             }
         });
         eventFragment.show(getFragmentManager(),"newEvent");
 
 
+    }
+
+    private void enterEditMode(){
+        this.inEditMode = true;
+        FloatingActionButton fab = (FloatingActionButton)findViewById(R.id.fab);
+        fab.setImageResource(R.drawable.ic_menu_exit);
+    }
+
+    private void exitEditMode(){
+        this.inEditMode = false;
+        FloatingActionButton fab = (FloatingActionButton)findViewById(R.id.fab);
+        fab.setImageResource(R.drawable.ic_menu_add);
     }
 }
 

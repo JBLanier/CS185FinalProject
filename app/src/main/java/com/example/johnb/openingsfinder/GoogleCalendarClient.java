@@ -68,7 +68,7 @@ public class GoogleCalendarClient {
     private static ArrayList<Long> mDesiredCalendarIDs;
     private Calendar freeSlotMinStartTime;
     private Calendar freeSlotMaxEndtime;
-    private static long mDesiredFreeSlotDuration = 7200000;
+    private static long mDesiredFreeSlotDuration = 0;
     private Context mContext;
 
     private DataChangedListener mDataChangedListener;
@@ -461,136 +461,136 @@ public class GoogleCalendarClient {
         return filteredEvents;
     }
 
-    public void setDuration(int minutes) {
-        mDesiredFreeSlotDuration = minutes;
+    public void setDuration(long millis) {
+        mDesiredFreeSlotDuration = millis;
     }
 
     private ArrayList<WeekViewEvent> getFreeSlotsForMonth(ArrayList<WeekViewEvent> events) {
         ArrayList<WeekViewEvent> freeSlots = new ArrayList<>();
+        if(mDesiredFreeSlotDuration != 0) {
+
+            //Populate Free Slots
+
+            String yearAndMonth = events.get(events.size() - 1).getName();
+
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy MM");
+            Calendar c = Calendar.getInstance();
+            try {
+                c.setTime(sdf.parse(yearAndMonth));
+            } catch (ParseException e) {
+                Log.d(TAG, "getFreeSlotsForMonth: PARSE EXCEPTION: " + e);
+            }
+            c.set(Calendar.DAY_OF_MONTH, 1);
+            c.set(Calendar.HOUR_OF_DAY, freeSlotMinStartTime.get(Calendar.HOUR_OF_DAY));
+            c.set(Calendar.MINUTE, freeSlotMinStartTime.get(Calendar.MINUTE));
+
+            Calendar freeSlotStartTime = Calendar.getInstance();
+            freeSlotStartTime.setTime(c.getTime());
+
+            Calendar freeSlotEndtime = Calendar.getInstance();
+            freeSlotEndtime.setTime(c.getTime());
+
+            freeSlotEndtime.set(Calendar.HOUR_OF_DAY, freeSlotMaxEndtime.get(Calendar.HOUR_OF_DAY));
+            freeSlotEndtime.set(Calendar.MINUTE, freeSlotMaxEndtime.get(Calendar.MINUTE));
 
 
-        //Populate Free Slots
+            int maxDay = c.getActualMaximum(Calendar.DAY_OF_MONTH);
 
-        String yearAndMonth = events.get(events.size()-1).getName();
+            Log.d(TAG, "KQ getFreeSlotsForMonth: NEW MONTH SET---------------------------------------------");
+            for (int co = 0; co < maxDay; co++) {
 
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy MM");
-        Calendar c = Calendar.getInstance();
-        try {
-            c.setTime(sdf.parse(yearAndMonth));
-        } catch (ParseException e) {
-            Log.d(TAG, "getFreeSlotsForMonth: PARSE EXCEPTION: " + e);
-        }
-        c.set(Calendar.DAY_OF_MONTH,1);
-        c.set(Calendar.HOUR_OF_DAY, freeSlotMinStartTime.get(Calendar.HOUR_OF_DAY));
-        c.set(Calendar.MINUTE, freeSlotMinStartTime.get(Calendar.MINUTE));
+                Log.d(TAG, String.format("KQ Year: %d, Month %d, Day %d", freeSlotStartTime.get(Calendar.YEAR), freeSlotStartTime.get(Calendar.MONTH), freeSlotEndtime.get(Calendar.DAY_OF_MONTH)));
+                Log.d(TAG, String.format("KQ Start time: Hour: %d, Minutes: %d", freeSlotStartTime.get(Calendar.HOUR_OF_DAY), freeSlotStartTime.get(Calendar.MINUTE)));
+                Log.d(TAG, String.format("KQ End time: Hour: %d, Minutes: %d, Day: %d", freeSlotEndtime.get(Calendar.HOUR_OF_DAY), freeSlotEndtime.get(Calendar.MINUTE), freeSlotEndtime.get(Calendar.DAY_OF_MONTH)));
 
-        Calendar freeSlotStartTime = Calendar.getInstance();
-        freeSlotStartTime.setTime(c.getTime());
+                Calendar s = Calendar.getInstance();
+                s.setTime(freeSlotStartTime.getTime());
 
-        Calendar freeSlotEndtime = Calendar.getInstance();
-        freeSlotEndtime.setTime(c.getTime());
+                Calendar e = Calendar.getInstance();
+                e.setTime(freeSlotEndtime.getTime());
 
-        freeSlotEndtime.set(Calendar.HOUR_OF_DAY, freeSlotMaxEndtime.get(Calendar.HOUR_OF_DAY));
-        freeSlotEndtime.set(Calendar.MINUTE, freeSlotMaxEndtime.get(Calendar.MINUTE));
+                WeekViewEvent freeSlot = new WeekViewEvent(getNewID(-1), "Free Slot", s, e);
+                freeSlot.setColor(Color.YELLOW);
+                freeSlots.add(freeSlot);
 
+                freeSlotStartTime.add(Calendar.DAY_OF_MONTH, 1);
+                freeSlotEndtime.add(Calendar.DAY_OF_MONTH, 1);
+            }
 
-        int maxDay = c.getActualMaximum(Calendar.DAY_OF_MONTH);
+            // Split up slots to fit around the actual events
 
-        Log.d(TAG, "KQ getFreeSlotsForMonth: NEW MONTH SET---------------------------------------------");
-        for(int co=0; co<maxDay; co++){
+            for (WeekViewEvent event : events) {
+                ArrayList<WeekViewEvent> toRemove = new ArrayList<>();
+                ArrayList<WeekViewEvent> toAdd = new ArrayList<>();
 
-            Log.d(TAG, String.format("KQ Year: %d, Month %d, Day %d",freeSlotStartTime.get(Calendar.YEAR),freeSlotStartTime.get(Calendar.MONTH),freeSlotEndtime.get(Calendar.DAY_OF_MONTH)));
-            Log.d(TAG, String.format("KQ Start time: Hour: %d, Minutes: %d", freeSlotStartTime.get(Calendar.HOUR_OF_DAY), freeSlotStartTime.get(Calendar.MINUTE)));
-            Log.d(TAG, String.format("KQ End time: Hour: %d, Minutes: %d, Day: %d", freeSlotEndtime.get(Calendar.HOUR_OF_DAY), freeSlotEndtime.get(Calendar.MINUTE), freeSlotEndtime.get(Calendar.DAY_OF_MONTH)));
+                for (WeekViewEvent freeSlot : freeSlots) {
+                    boolean ESBSS = event.getStartTime().before(freeSlot.getStartTime());
+                    boolean EEBSS = event.getEndTime().before(freeSlot.getStartTime());
+                    boolean EEBSE = event.getEndTime().before(freeSlot.getEndTime());
+                    boolean ESBSE = event.getStartTime().before(freeSlot.getEndTime());
 
-            Calendar s = Calendar.getInstance();
-            s.setTime(freeSlotStartTime.getTime());
+                    boolean ESASE = event.getStartTime().after(freeSlot.getEndTime());
+                    boolean EEASE = event.getEndTime().after(freeSlot.getEndTime());
+                    boolean EEASS = event.getEndTime().after(freeSlot.getStartTime());
+                    boolean ESASS = event.getStartTime().after(freeSlot.getStartTime());
 
-            Calendar e = Calendar.getInstance();
-            e.setTime(freeSlotEndtime.getTime());
-
-            WeekViewEvent freeSlot = new WeekViewEvent(getNewID(-1),"Free Slot",s,e);
-            freeSlot.setColor(Color.YELLOW);
-            freeSlots.add(freeSlot);
-
-            freeSlotStartTime.add(Calendar.DAY_OF_MONTH, 1);
-            freeSlotEndtime.add(Calendar.DAY_OF_MONTH, 1);
-        }
-
-        // Split up slots to fit around the actual events
-
-        for (WeekViewEvent event : events) {
-            ArrayList<WeekViewEvent> toRemove = new ArrayList<>();
-            ArrayList<WeekViewEvent> toAdd = new ArrayList<>();
-
-            for (WeekViewEvent freeSlot : freeSlots) {
-                boolean ESBSS = event.getStartTime().before(freeSlot.getStartTime());
-                boolean EEBSS = event.getEndTime().before(freeSlot.getStartTime());
-                boolean EEBSE = event.getEndTime().before(freeSlot.getEndTime());
-                boolean ESBSE = event.getStartTime().before(freeSlot.getEndTime());
-
-                boolean ESASE = event.getStartTime().after(freeSlot.getEndTime());
-                boolean EEASE = event.getEndTime().after(freeSlot.getEndTime());
-                boolean EEASS = event.getEndTime().after(freeSlot.getStartTime());
-                boolean ESASS = event.getStartTime().after(freeSlot.getStartTime());
-
-                if(ESBSS && EEBSS){
-                    //If event is completely before free slot : DO NOTHING
-                }
-                if(ESASE && EEASE){
-                    //If event is completely after free slot : DO NOTHING
-                }
-                if(ESBSS && EEASS && EEBSE){
-                    //Event begins before free slot and ends during free slot
-                    freeSlot.setStartTime(event.getEndTime());
-                    long duration = freeSlot.getEndTime().getTimeInMillis()-freeSlot.getStartTime().getTimeInMillis();
-                    if(duration < mDesiredFreeSlotDuration) {
+                    if (ESBSS && EEBSS) {
+                        //If event is completely before free slot : DO NOTHING
+                    }
+                    if (ESASE && EEASE) {
+                        //If event is completely after free slot : DO NOTHING
+                    }
+                    if (ESBSS && EEASS && EEBSE) {
+                        //Event begins before free slot and ends during free slot
+                        freeSlot.setStartTime(event.getEndTime());
+                        long duration = freeSlot.getEndTime().getTimeInMillis() - freeSlot.getStartTime().getTimeInMillis();
+                        if (duration < mDesiredFreeSlotDuration) {
+                            toRemove.add(freeSlot);
+                        }
+                    }
+                    if (ESBSE && ESASS && EEASE) {
+                        //Event begins during free slot and ends after free slot
+                        freeSlot.setEndTime(event.getStartTime());
+                        long duration = freeSlot.getEndTime().getTimeInMillis() - freeSlot.getStartTime().getTimeInMillis();
+                        if (duration < mDesiredFreeSlotDuration) {
+                            toRemove.add(freeSlot);
+                        }
+                    }
+                    if (ESBSS && EEASE) {
+                        //Event begins before free slot and ends after free slot : REMOVE FREE SLOT
                         toRemove.add(freeSlot);
                     }
-                }
-                if(ESBSE && ESASS && EEASE){
-                    //Event begins during free slot and ends after free slot
-                    freeSlot.setEndTime(event.getStartTime());
-                    long duration = freeSlot.getEndTime().getTimeInMillis()-freeSlot.getStartTime().getTimeInMillis();
-                    if(duration < mDesiredFreeSlotDuration) {
+                    if (ESASS && EEBSE) {
+                        //Event begins and ends during free slot : REMOVE AND SPLIT FREE SLOT
                         toRemove.add(freeSlot);
+                        WeekViewEvent beforeSlot = new WeekViewEvent(getNewID(-1), "Free Slot", freeSlot.getStartTime(), event.getStartTime());
+                        beforeSlot.setColor(Color.YELLOW);
+
+                        WeekViewEvent afterSlot = new WeekViewEvent(getNewID(-1), "Free Slot", event.getEndTime(), freeSlot.getEndTime());
+                        afterSlot.setColor(Color.YELLOW);
+
+                        long Bduration = beforeSlot.getEndTime().getTimeInMillis() - beforeSlot.getStartTime().getTimeInMillis();
+                        if (Bduration >= mDesiredFreeSlotDuration) {
+                            toAdd.add(beforeSlot);
+                        }
+
+                        long Aduration = afterSlot.getEndTime().getTimeInMillis() - afterSlot.getStartTime().getTimeInMillis();
+                        if (Aduration >= mDesiredFreeSlotDuration) {
+                            toAdd.add(afterSlot);
+                        }
                     }
                 }
-                if(ESBSS && EEASE){
-                    //Event begins before free slot and ends after free slot : REMOVE FREE SLOT
-                    toRemove.add(freeSlot);
+
+                for (WeekViewEvent removeSlot : toRemove) {
+                    freeSlots.remove(removeSlot);
                 }
-                if(ESASS && EEBSE){
-                    //Event begins and ends during free slot : REMOVE AND SPLIT FREE SLOT
-                    toRemove.add(freeSlot);
-                    WeekViewEvent beforeSlot = new WeekViewEvent(getNewID(-1),"Free Slot",freeSlot.getStartTime(),event.getStartTime());
-                    beforeSlot.setColor(Color.YELLOW);
 
-                    WeekViewEvent afterSlot =  new WeekViewEvent(getNewID(-1),"Free Slot",event.getEndTime(),freeSlot.getEndTime());
-                    afterSlot.setColor(Color.YELLOW);
-
-                    long Bduration = beforeSlot.getEndTime().getTimeInMillis()-beforeSlot.getStartTime().getTimeInMillis();
-                    if(Bduration >= mDesiredFreeSlotDuration) {
-                        toAdd.add(beforeSlot);
-                    }
-
-                    long Aduration = afterSlot.getEndTime().getTimeInMillis()-afterSlot.getStartTime().getTimeInMillis();
-                    if(Aduration >= mDesiredFreeSlotDuration) {
-                        toAdd.add(afterSlot);
-                    }
+                for (WeekViewEvent addSlot : toAdd) {
+                    freeSlots.add(addSlot);
                 }
-            }
 
-            for (WeekViewEvent removeSlot : toRemove) {
-                freeSlots.remove(removeSlot);
             }
-
-            for (WeekViewEvent addSlot :toAdd) {
-                freeSlots.add(addSlot);
-            }
-
         }
-
         return freeSlots;
     }
 
