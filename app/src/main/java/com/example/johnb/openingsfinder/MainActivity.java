@@ -2,28 +2,26 @@ package com.example.johnb.openingsfinder;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.graphics.RectF;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.util.Log;
-import android.util.TypedValue;
-import android.view.SubMenu;
-import android.view.View;
-import android.support.design.widget.NavigationView;
+import android.support.v4.graphics.ColorUtils;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
+import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.CheckedTextView;
-import android.widget.ListView;
+import android.view.SubMenu;
+import android.view.View;
 import android.widget.Toast;
 
 import com.alamkanak.weekview.DateTimeInterpreter;
@@ -434,13 +432,49 @@ public class MainActivity extends AppCompatActivity
     private void enterEditMode(){
         this.inEditMode = true;
         FloatingActionButton fab = (FloatingActionButton)findViewById(R.id.fab);
+        dimWeekViewColors();
         fab.setImageResource(R.drawable.ic_menu_exit);
     }
 
-    private void exitEditMode(){
+    private void exitEditMode() {
         this.inEditMode = false;
-        FloatingActionButton fab = (FloatingActionButton)findViewById(R.id.fab);
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        resetWeekViewColors();
         fab.setImageResource(R.drawable.ic_menu_add);
+    }
+
+    private void dimWeekViewColors() {
+        
+        mWeekView.setBackgroundColor(getDimmedColor(getColor(R.color.week_view_background_color)));
+
+        mWeekView.setEventTextColor(getDimmedColor(mWeekView.getEventTextColor()));
+
+        mWeekView.setHourSeparatorColor(getDimmedColor(mWeekView.getHourSeparatorColor()));
+
+        mWeekView.setHeaderColumnBackgroundColor(getDimmedColor(mWeekView.getHeaderColumnBackgroundColor()));
+        mWeekView.setHeaderColumnTextColor(getDimmedColor(mWeekView.getHeaderColumnTextColor()));
+
+        mWeekView.setHeaderRowBackgroundColor(getDimmedColor(mWeekView.getHeaderRowBackgroundColor()));
+
+    }
+
+    private void resetWeekViewColors() {
+        mWeekView.setBackgroundColor(getColor(R.color.week_view_background_color));
+
+        mWeekView.setEventTextColor(getColor(R.color.event_text_color));
+
+        mWeekView.setHourSeparatorColor(getColor(R.color.hour_separator_color));
+
+        mWeekView.setHeaderColumnBackgroundColor(getColor(R.color.header_column_background_color));
+        mWeekView.setHeaderColumnTextColor(getColor(R.color.header_column_text_color));
+
+        mWeekView.setHeaderRowBackgroundColor(getColor(R.color.header_row_background_color));
+
+    }
+
+    private int getDimmedColor(int color){
+        return ColorUtils.blendARGB(color, Color.BLACK,0.6f);
+
     }
 }
 

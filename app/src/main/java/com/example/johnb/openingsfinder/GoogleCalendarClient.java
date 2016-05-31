@@ -11,13 +11,11 @@ import android.net.Uri;
 import android.os.Build;
 import android.provider.CalendarContract;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.graphics.ColorUtils;
 import android.util.Log;
-import android.widget.ArrayAdapter;
-
 
 import com.alamkanak.weekview.WeekViewEvent;
 
-import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -69,6 +67,7 @@ public class GoogleCalendarClient {
     private Calendar freeSlotMinStartTime;
     private Calendar freeSlotMaxEndtime;
     private static long mDesiredFreeSlotDuration = 0;
+    private boolean mDimEventColors = false;
     private Context mContext;
 
     private DataChangedListener mDataChangedListener;
@@ -364,13 +363,37 @@ public class GoogleCalendarClient {
             String cacheMonth = monthArray.get(monthArray.size()-1).getName();
 
             if (cacheMonth.equalsIgnoreCase(requestMonth)) {
-                ArrayList<WeekViewEvent> returnArray = new ArrayList<>(monthArray);
+
+                ArrayList<WeekViewEvent> returnArray;
+
+
+                if (mDesiredFreeSlotDuration != 0) {
+                    Log.d(TAG, "changing event colors");
+
+                    returnArray = new ArrayList<>();
+
+                    for (WeekViewEvent event : monthArray) {
+                        int origColor = event.getColor();
+                        int newColor = ColorUtils.blendARGB(origColor,Color.BLACK,0.5f);
+                        returnArray.add(new WeekViewEvent(event.getId(),event.getName(),event.getStartTime(),event.getEndTime()));
+                        returnArray.get(returnArray.size()-1).setColor(newColor);
+
+                    }
+
+
+                } else {
+                    returnArray = new ArrayList<>(monthArray);
+                }
                 returnArray = filterEventsForDesiredCalendars(returnArray);
+
+
+
                 ArrayList<WeekViewEvent> freeslots = getFreeSlotsForMonth(returnArray);
 
                 Log.d(TAG, "DX" + WeekViewEventListToString(freeslots));
 
                 freeslots.addAll(returnArray);
+
 
                 return freeslots;
             }
@@ -469,8 +492,6 @@ public class GoogleCalendarClient {
         ArrayList<WeekViewEvent> freeSlots = new ArrayList<>();
         if(mDesiredFreeSlotDuration != 0) {
 
-            //Populate Free Slots
-
             String yearAndMonth = events.get(events.size() - 1).getName();
 
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy MM");
@@ -510,7 +531,9 @@ public class GoogleCalendarClient {
                 e.setTime(freeSlotEndtime.getTime());
 
                 WeekViewEvent freeSlot = new WeekViewEvent(getNewID(-1), "Free Slot", s, e);
-                freeSlot.setColor(Color.YELLOW);
+
+                freeSlot.setColor(mContext.getColor(R.color.free_slot_color));
+
                 freeSlots.add(freeSlot);
 
                 freeSlotStartTime.add(Calendar.DAY_OF_MONTH, 1);
@@ -564,10 +587,12 @@ public class GoogleCalendarClient {
                         //Event begins and ends during free slot : REMOVE AND SPLIT FREE SLOT
                         toRemove.add(freeSlot);
                         WeekViewEvent beforeSlot = new WeekViewEvent(getNewID(-1), "Free Slot", freeSlot.getStartTime(), event.getStartTime());
-                        beforeSlot.setColor(Color.YELLOW);
+
+                        beforeSlot.setColor(mContext.getColor(R.color.free_slot_color));
 
                         WeekViewEvent afterSlot = new WeekViewEvent(getNewID(-1), "Free Slot", event.getEndTime(), freeSlot.getEndTime());
-                        afterSlot.setColor(Color.YELLOW);
+                        afterSlot.setColor(mContext.getColor(R.color.free_slot_color));
+
 
                         long Bduration = beforeSlot.getEndTime().getTimeInMillis() - beforeSlot.getStartTime().getTimeInMillis();
                         if (Bduration >= mDesiredFreeSlotDuration) {
@@ -594,4 +619,7 @@ public class GoogleCalendarClient {
         return freeSlots;
     }
 
+    public void setDimEventColors(boolean dimEventColors) {
+        this.mDimEventColors = dimEventColors;
+    }
 }

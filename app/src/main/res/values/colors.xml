@@ -11,4 +11,17 @@
     <color name="toolbar">#efefef</color>
     <color name="toolbar_text">#8f000000</color>
     <color name="accent">#2789e4</color>
+
+    <color name="free_slot_color">#ffae00</color>
+
+    <color name="event_text_color">#ffffff</color>
+    <color name="week_view_background_color">#fafafa</color>
+    <color name="today_header_text_color">#303F9F</color>
+    <color name="header_column_background_color">#ffffff</color>
+    <color name="today_background_color">#1848adff</color>
+    <color name="day_background_color">#05000000</color>
+    <color name="header_row_background_color">#ffffffff</color>
+    <color name="header_column_text_color">#3F51B5</color>
+    <color name="hour_separator_color">#e1e1e1</color>
+
 </resources>
