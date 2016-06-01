@@ -183,7 +183,7 @@ public class GoogleCalendarClient {
 
     public void onCalendarsQueryComplete(Cursor cur) {
 
-        Log.d(TAG, "loadCalendars: ---------START Calendar Retrieved list---------------");
+        //Log.d(TAG, "loadCalendars: ---------START Calendar Retrieved list---------------");
 
         mCachedCalendars = new ArrayList<>();
 
@@ -201,13 +201,13 @@ public class GoogleCalendarClient {
 
             mCachedCalendars.add(gcal);
 
-            Log.d(TAG, String.format("loadCalendars: CalID %d",calID));
-            Log.d(TAG, "loadCalendars: Name: " + displayName);
+            //Log.d(TAG, String.format("loadCalendars: CalID %d",calID));
+            //Log.d(TAG, "loadCalendars: Name: " + displayName);
             //   Log.d(TAG, "loadCalendars: accountName: " + accountName);
             //   Log.d(TAG, "loadCalendars: ownername: " + ownerName);
         }
 
-        Log.d(TAG, "loadCalendars: ---------END Calendar Retrieved list---------------");
+        //Log.d(TAG, "loadCalendars: ---------END Calendar Retrieved list---------------");
         
         notifyCalendarsLoaded();
         loadEventsForYearAndMonth(2016,5);
@@ -256,7 +256,7 @@ public class GoogleCalendarClient {
     }
 
     public void onEventsQueryComplete(Cursor cur, String yearandMonth) {
-        Log.d(TAG, "onEventsQueryComplete: ---------START Events Retrieved list---------------");
+        //Log.d(TAG, "onEventsQueryComplete: ---------START Events Retrieved list---------------");
 
         ArrayList<WeekViewEvent> events = new ArrayList<>();
 
@@ -302,8 +302,8 @@ public class GoogleCalendarClient {
 
             //Log Stuff
           //  Log.d(TAG, String.format(": CalID %d",calID));
-            Log.d(TAG, ": EVENT Name: " + displayName);
-            Log.d(TAG, ":  color: " + hexColor);
+           // Log.d(TAG, ": EVENT Name: " + displayName);
+            //Log.d(TAG, ":  color: " + hexColor);
             //Log.d(TAG, "onEventsQueryComplete: StartTime: " + DateFormat.getDateTimeInstance().format(startTime.getTime()));
             //Log.d(TAG, "onEventsQueryComplete: EndTime: " + DateFormat.getDateTimeInstance().format(endTime.getTime()));
            // Log.d(TAG, "onEventsQueryComplete: AllDay: " + AllDay);
@@ -318,7 +318,7 @@ public class GoogleCalendarClient {
             event.setColor(colorInt);
             events.add(event);
         }
-        Log.d(TAG, "OnEventsQueryComplete: ---------END Events Retrieved list---------------");
+        //Log.d(TAG, "OnEventsQueryComplete: ---------END Events Retrieved list---------------");
 
         // Add stub event at end or array with Year and Month information
         Calendar stubCalender = Calendar.getInstance();
@@ -403,11 +403,11 @@ public class GoogleCalendarClient {
 
     private void addMonthToEventsCache(ArrayList<WeekViewEvent> newMonthArray) {
 
-        Log.d(TAG, "addMonthToEventsCache: \n\nADDING MONTH TO CACHE:\n");
-        Log.d(TAG, WeekViewEventListToString(newMonthArray));
+        //Log.d(TAG, "addMonthToEventsCache: \n\nADDING MONTH TO CACHE:\n");
+        //Log.d(TAG, WeekViewEventListToString(newMonthArray));
 
         if (mCachedEvents.size() == 0) {
-            Log.d(TAG, "addMonthToEventsCache: Cache is empty, adding month without comparing anything");
+            //Log.d(TAG, "addMonthToEventsCache: Cache is empty, adding month without comparing anything");
             mCachedEvents.add(newMonthArray);
         } else {
 
@@ -419,7 +419,7 @@ public class GoogleCalendarClient {
 
                     if (oldMonth.equalsIgnoreCase(newMonth)) {
                         removeIndex = mCachedEvents.indexOf(monthArray);
-                        Log.d(TAG, "addMonthToEventsCache: Month was already present, removed old one");
+                        //Log.d(TAG, "addMonthToEventsCache: Month was already present, removed old one");
                     }
 
             }
@@ -432,10 +432,10 @@ public class GoogleCalendarClient {
             mCachedEvents.add(newMonthArray);
 
         }
-        Log.d(TAG, "NEW CACHE:");
-        for (ArrayList<WeekViewEvent> monthArray : mCachedEvents) {
+        //Log.d(TAG, "NEW CACHE:");
+        /*for (ArrayList<WeekViewEvent> monthArray : mCachedEvents) {
             Log.d(TAG, WeekViewEventListToString(monthArray));
-        }
+        }*/
     }
 
     private long getNewID(long CalID) {
@@ -517,12 +517,12 @@ public class GoogleCalendarClient {
 
             int maxDay = c.getActualMaximum(Calendar.DAY_OF_MONTH);
 
-            Log.d(TAG, "KQ getFreeSlotsForMonth: NEW MONTH SET---------------------------------------------");
+            //Log.d(TAG, "KQ getFreeSlotsForMonth: NEW MONTH SET---------------------------------------------");
             for (int co = 0; co < maxDay; co++) {
 
-                Log.d(TAG, String.format("KQ Year: %d, Month %d, Day %d", freeSlotStartTime.get(Calendar.YEAR), freeSlotStartTime.get(Calendar.MONTH), freeSlotEndtime.get(Calendar.DAY_OF_MONTH)));
-                Log.d(TAG, String.format("KQ Start time: Hour: %d, Minutes: %d", freeSlotStartTime.get(Calendar.HOUR_OF_DAY), freeSlotStartTime.get(Calendar.MINUTE)));
-                Log.d(TAG, String.format("KQ End time: Hour: %d, Minutes: %d, Day: %d", freeSlotEndtime.get(Calendar.HOUR_OF_DAY), freeSlotEndtime.get(Calendar.MINUTE), freeSlotEndtime.get(Calendar.DAY_OF_MONTH)));
+                //Log.d(TAG, String.format("KQ Year: %d, Month %d, Day %d", freeSlotStartTime.get(Calendar.YEAR), freeSlotStartTime.get(Calendar.MONTH), freeSlotEndtime.get(Calendar.DAY_OF_MONTH)));
+                //Log.d(TAG, String.format("KQ Start time: Hour: %d, Minutes: %d", freeSlotStartTime.get(Calendar.HOUR_OF_DAY), freeSlotStartTime.get(Calendar.MINUTE)));
+                //Log.d(TAG, String.format("KQ End time: Hour: %d, Minutes: %d, Day: %d", freeSlotEndtime.get(Calendar.HOUR_OF_DAY), freeSlotEndtime.get(Calendar.MINUTE), freeSlotEndtime.get(Calendar.DAY_OF_MONTH)));
 
                 Calendar s = Calendar.getInstance();
                 s.setTime(freeSlotStartTime.getTime());

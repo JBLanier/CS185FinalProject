@@ -2,6 +2,7 @@ package com.example.johnb.openingsfinder;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.RectF;
 import android.os.Build;
@@ -72,17 +73,31 @@ public class MainActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        Log.d(TAG, "onCreate: Called");
+
+        int numVisibleDays = 7;
+        Calendar focusDay = null;
+
+        if (savedInstanceState != null) {
+            inEditMode = savedInstanceState.getBoolean("edit_mode");
+
+            numVisibleDays = savedInstanceState.getInt("number_visible_days");
+
+            focusDay = (Calendar) savedInstanceState.getSerializable("focus_day");
+        }
+
+        Log.d(TAG, "onCreate: INEDITMODE: " + inEditMode);
+
+
         setUpStandardNavigationViewObjects();
 
         if (checkCalendarPermissions()) {
            setUpGoogleCalendarClient();
         }
-        setUpWeekView();
+        setUpWeekView(numVisibleDays, focusDay);
+
+
         //addDrawerItems();
-
-
-
-
     }
 
 
@@ -125,7 +140,14 @@ public class MainActivity extends AppCompatActivity
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         assert fab != null;
-        fab.setImageResource(R.drawable.ic_menu_add);
+        if (inEditMode) {
+            fab.setImageResource(R.drawable.ic_menu_exit);
+            dimWeekViewColors();
+        } else {
+            fab.setImageResource(R.drawable.ic_menu_add);
+            resetWeekViewColors();
+        }
+
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -157,10 +179,12 @@ public class MainActivity extends AppCompatActivity
 
     }
 
-    void setUpWeekView() {
+    void setUpWeekView(int numVisibleDays, Calendar focusDay) {
         // Get a reference for the week view in the layout.
         mWeekView = (WeekView) findViewById(R.id.weekView);
 
+
+        mWeekView.setNumberOfVisibleDays(numVisibleDays);
         // Show a toast message about the touched event.
         mWeekView.setOnEventClickListener(this);
 
@@ -175,7 +199,12 @@ public class MainActivity extends AppCompatActivity
         mWeekView.setEmptyViewLongPressListener(this);
         // Set up a date time interpreter to interpret how the date and time will be formatted in
         // the week view. This is optional.
-        setupDateTimeInterpreter(false);
+        if (numVisibleDays > 4) {
+            setupDateTimeInterpreter(true);
+        } else {
+            setupDateTimeInterpreter(false);
+        }
+
     }
 
     public boolean checkCalendarPermissions() {
@@ -243,6 +272,9 @@ public class MainActivity extends AppCompatActivity
 
             @Override
             public String interpretTime(int hour) {
+                if (hour == 12) {
+                    return"12 PM";
+                }
                 return hour > 11 ? (hour - 12) + " PM" : (hour == 0 ? "12 AM" : hour + " AM");
             }
         });
@@ -294,6 +326,8 @@ public class MainActivity extends AppCompatActivity
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
 
+        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
@@ -301,7 +335,8 @@ public class MainActivity extends AppCompatActivity
 
         if (id == R.id.single_day) {
             if (mWeekViewType != TYPE_DAY_VIEW) {
-                item.setChecked(!item.isChecked());
+                //item.setChecked(!item.isChecked());
+
                 mWeekViewType = TYPE_DAY_VIEW;
                 mWeekView.setNumberOfVisibleDays(1);
 
@@ -312,7 +347,7 @@ public class MainActivity extends AppCompatActivity
             }
         } else if (id == R.id.three_day) {
             if (mWeekViewType != TYPE_THREE_DAY_VIEW) {
-                item.setChecked(!item.isChecked());
+                //item.setChecked(!item.isChecked());
                 mWeekViewType = TYPE_THREE_DAY_VIEW;
                 mWeekView.setNumberOfVisibleDays(3);
 
@@ -323,7 +358,7 @@ public class MainActivity extends AppCompatActivity
             }
         } else if (id == R.id.week) {
             if (mWeekViewType != TYPE_WEEK_VIEW) {
-                item.setChecked(!item.isChecked());
+                //item.setChecked(!item.isChecked());
                 mWeekViewType = TYPE_WEEK_VIEW;
                 mWeekView.setNumberOfVisibleDays(7);
 
@@ -444,37 +479,48 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void dimWeekViewColors() {
-        
-        mWeekView.setBackgroundColor(getDimmedColor(getColor(R.color.week_view_background_color)));
+        WeekView weekView = (WeekView) findViewById(R.id.weekView);
 
-        mWeekView.setEventTextColor(getDimmedColor(mWeekView.getEventTextColor()));
+        weekView.setBackgroundColor(getDimmedColor(getColor(R.color.week_view_background_color)));
 
-        mWeekView.setHourSeparatorColor(getDimmedColor(mWeekView.getHourSeparatorColor()));
+        weekView.setEventTextColor(getDimmedColor(weekView.getEventTextColor()));
 
-        mWeekView.setHeaderColumnBackgroundColor(getDimmedColor(mWeekView.getHeaderColumnBackgroundColor()));
-        mWeekView.setHeaderColumnTextColor(getDimmedColor(mWeekView.getHeaderColumnTextColor()));
+        weekView.setHourSeparatorColor(getDimmedColor(weekView.getHourSeparatorColor()));
 
-        mWeekView.setHeaderRowBackgroundColor(getDimmedColor(mWeekView.getHeaderRowBackgroundColor()));
+        weekView.setHeaderColumnBackgroundColor(getDimmedColor(weekView.getHeaderColumnBackgroundColor()));
+        weekView.setHeaderColumnTextColor(getDimmedColor(weekView.getHeaderColumnTextColor()));
+
+        weekView.setHeaderRowBackgroundColor(getDimmedColor(weekView.getHeaderRowBackgroundColor()));
 
     }
 
     private void resetWeekViewColors() {
-        mWeekView.setBackgroundColor(getColor(R.color.week_view_background_color));
+        WeekView weekView = (WeekView) findViewById(R.id.weekView);
 
-        mWeekView.setEventTextColor(getColor(R.color.event_text_color));
+        weekView.setBackgroundColor(getColor(R.color.week_view_background_color));
 
-        mWeekView.setHourSeparatorColor(getColor(R.color.hour_separator_color));
+        weekView.setEventTextColor(getColor(R.color.light_text_color));
 
-        mWeekView.setHeaderColumnBackgroundColor(getColor(R.color.header_column_background_color));
-        mWeekView.setHeaderColumnTextColor(getColor(R.color.header_column_text_color));
+        weekView.setHourSeparatorColor(getColor(R.color.hour_separator_color));
 
-        mWeekView.setHeaderRowBackgroundColor(getColor(R.color.header_row_background_color));
+        weekView.setHeaderColumnBackgroundColor(getColor(R.color.header_column_background_color));
+        weekView.setHeaderColumnTextColor(getColor(R.color.light_text_color));
+
+        weekView.setHeaderRowBackgroundColor(getColor(R.color.header_row_background_color));
 
     }
 
     private int getDimmedColor(int color){
         return ColorUtils.blendARGB(color, Color.BLACK,0.6f);
 
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putBoolean("edit_mode", inEditMode);
+        outState.putInt("number_visible_days", mWeekView.getNumberOfVisibleDays());
+        outState.putSerializable("focus_day",mWeekView.getFirstVisibleDay());
     }
 }
 

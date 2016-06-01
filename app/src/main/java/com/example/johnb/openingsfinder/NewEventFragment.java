@@ -4,12 +4,9 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.EditText;
 import android.widget.NumberPicker;
-import android.widget.Spinner;
 
 
 public class NewEventFragment extends DialogFragment{
@@ -40,7 +37,7 @@ public class NewEventFragment extends DialogFragment{
         durationHours.setMaxValue(23);
         durationHours.setWrapSelectorWheel(false);
         durationHours.setDisplayedValues(nums);
-        durationHours.setValue(0);
+        durationHours.setValue(1);
         durationHours.setDescendantFocusability(NumberPicker.FOCUS_BLOCK_DESCENDANTS);
 
         final NumberPicker durationMinutes = (NumberPicker) contentView.findViewById(R.id.minutes);

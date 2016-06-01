@@ -2,7 +2,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
 
-    <item android:title="Calendar Display">
+    <item android:title="Display">
         <menu>
             <item
                 android:id="@+id/single_day"
@@ -23,14 +23,13 @@
     </item>
 
 
-    <item android:title="Misc">
-        <menu>
+
             <item
                 android:id="@+id/settings"
-                android:title="Settings" />
+                android:title="Settings"
+                android:icon="@android:drawable/ic_menu_preferences"/>
 
-        </menu>
-    </item>
+
 
 
 </menu>
