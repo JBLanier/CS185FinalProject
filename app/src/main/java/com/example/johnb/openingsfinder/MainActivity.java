@@ -1,6 +1,7 @@
 package com.example.johnb.openingsfinder;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
@@ -59,7 +60,7 @@ public class MainActivity extends AppCompatActivity
     private static final int MENU_EXIT_EDIT = Menu.FIRST + 2;
 
     private WeekView mWeekView;
-    private boolean inEditMode = false;
+    private static boolean inEditMode = false;
 
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -88,8 +89,11 @@ public class MainActivity extends AppCompatActivity
 
         Log.d(TAG, "onCreate: INEDITMODE: " + inEditMode);
 
-
         setUpStandardNavigationViewObjects();
+
+        if (!inEditMode) {
+            GoogleCalendarClient.getInstance().setDuration(0);
+        }
 
         if (checkCalendarPermissions()) {
            setUpGoogleCalendarClient();
@@ -367,6 +371,8 @@ public class MainActivity extends AppCompatActivity
                 mWeekView.setTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 10, getResources().getDisplayMetrics()));
                 mWeekView.setEventTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 10, getResources().getDisplayMetrics()));
             }
+        } else if (id == R.id.settings) {
+            launchSettingsActivity();
         }
 
 
@@ -382,7 +388,7 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onEventClick(WeekViewEvent event, RectF eventRect) {
-        Toast.makeText(this, "Clicked " + event.getName(), Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, ""+event.getEndTime().get(Calendar.HOUR_OF_DAY), Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -521,6 +527,11 @@ public class MainActivity extends AppCompatActivity
         outState.putBoolean("edit_mode", inEditMode);
         outState.putInt("number_visible_days", mWeekView.getNumberOfVisibleDays());
         outState.putSerializable("focus_day",mWeekView.getFirstVisibleDay());
+    }
+
+    private void launchSettingsActivity() {
+        Intent intent = new Intent(this, SettingsActivity.class);
+        startActivity(intent);
     }
 }
 

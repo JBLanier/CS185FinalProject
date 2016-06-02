@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <ListPreference
+        android:key="min_opening_start_time"
+        android:title="Min Opening Start Time"
+        android:entries="@array/min_start_times"
+        android:entryValues="@array/min_start_values"
+        android:defaultValue="6"
+        android:summary="%s"
+        />
+    <ListPreference
+        android:key="max_opening_end_time"
+        android:title="Max Opening End Time"
+        android:entries="@array/max_end_times"
+        android:entryValues="@array/max_end_values"
+        android:defaultValue="23"
+        android:summary="%s"
+        />
+    <SwitchPreference
+        android:key="ignore_all_day_events"
+        android:title="Ignore All-Day Events"
+        android:summaryOn="When finding openings, all-day events will be treated as free time."
+        android:summaryOff="When finding openings, if a date has an all-day event during it, the entire date will be blocked off as busy."
+        android:defaultValue="true"/>
+</PreferenceScreen>

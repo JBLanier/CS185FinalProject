@@ -4,11 +4,13 @@ import android.Manifest;
 import android.content.AsyncQueryHandler;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
+import android.preference.PreferenceManager;
 import android.provider.CalendarContract;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.graphics.ColorUtils;
@@ -64,8 +66,8 @@ public class GoogleCalendarClient {
     private ArrayList<ArrayList<WeekViewEvent>> mCachedEvents;
     private ArrayList<GCalendar> mCachedCalendars;
     private static ArrayList<Long> mDesiredCalendarIDs;
-    private Calendar freeSlotMinStartTime;
-    private Calendar freeSlotMaxEndtime;
+    //private Calendar freeSlotMinStartTime;
+   // private Calendar freeSlotMaxEndtime;
     private static long mDesiredFreeSlotDuration = 0;
     private boolean mDimEventColors = false;
     private Context mContext;
@@ -84,10 +86,13 @@ public class GoogleCalendarClient {
         mDesiredCalendarIDs = new ArrayList<>();
         mCachedCalendars = new ArrayList<>();
         mCachedEvents = new ArrayList<>();
+
+        /*
         freeSlotMinStartTime = Calendar.getInstance();
         freeSlotMinStartTime.set(2000,1,1,8,0);
         freeSlotMaxEndtime = Calendar.getInstance();
         freeSlotMaxEndtime.set(2000,1,1,23,59);
+        */
     }
 
     public static GoogleCalendarClient getInstance() {
@@ -502,6 +507,9 @@ public class GoogleCalendarClient {
                 Log.d(TAG, "getFreeSlotsForMonth: PARSE EXCEPTION: " + e);
             }
             c.set(Calendar.DAY_OF_MONTH, 1);
+
+            Calendar freeSlotMinStartTime = getFreeSlotMinStartTime();
+
             c.set(Calendar.HOUR_OF_DAY, freeSlotMinStartTime.get(Calendar.HOUR_OF_DAY));
             c.set(Calendar.MINUTE, freeSlotMinStartTime.get(Calendar.MINUTE));
 
@@ -510,6 +518,8 @@ public class GoogleCalendarClient {
 
             Calendar freeSlotEndtime = Calendar.getInstance();
             freeSlotEndtime.setTime(c.getTime());
+
+            Calendar freeSlotMaxEndtime = getFreeSlotMaxEndTime();
 
             freeSlotEndtime.set(Calendar.HOUR_OF_DAY, freeSlotMaxEndtime.get(Calendar.HOUR_OF_DAY));
             freeSlotEndtime.set(Calendar.MINUTE, freeSlotMaxEndtime.get(Calendar.MINUTE));
@@ -543,6 +553,23 @@ public class GoogleCalendarClient {
             // Split up slots to fit around the actual events
 
             for (WeekViewEvent event : events) {
+
+                if (getIgnoreAllDayEvents()) {
+                    //Check for All-Day Event
+                    boolean startsAtMintime = false;
+                    if (event.getStartTime().get(Calendar.HOUR_OF_DAY) == 0 && event.getStartTime().get(Calendar.MINUTE) == 0) {
+                        startsAtMintime = true;
+                    }
+
+                    boolean twentyFourHours = false;
+                    if (event.getEndTime().getTimeInMillis() == event.getStartTime().getTimeInMillis() + TimeUnit.DAYS.toMillis(1)) {
+                        twentyFourHours = true;
+                    }
+
+                    if (startsAtMintime && twentyFourHours) {
+                        continue;
+                    }
+                }
                 ArrayList<WeekViewEvent> toRemove = new ArrayList<>();
                 ArrayList<WeekViewEvent> toAdd = new ArrayList<>();
 
@@ -621,5 +648,37 @@ public class GoogleCalendarClient {
 
     public void setDimEventColors(boolean dimEventColors) {
         this.mDimEventColors = dimEventColors;
+    }
+
+    private Calendar getFreeSlotMinStartTime() {
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(mContext);
+        String syncConnPref = sharedPref.getString(SettingsActivity.KEY_MIN_OPENING_START_TIME, "");
+        Calendar returnCal = Calendar.getInstance();
+        returnCal.set(2000,1,1,0,0);
+        int hour = Integer.parseInt(syncConnPref);
+        returnCal.set(Calendar.HOUR_OF_DAY, hour);
+
+        return returnCal;
+
+    }
+
+    private Calendar getFreeSlotMaxEndTime() {
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(mContext);
+        String syncConnPref = sharedPref.getString(SettingsActivity.KEY_MAX_OPENING_END_TIME, "");
+        Calendar returnCal = Calendar.getInstance();
+        returnCal.set(2000,1,1,23,0);
+        int hour = Integer.parseInt(syncConnPref);
+        if (hour != 0) {
+            returnCal.set(Calendar.HOUR_OF_DAY, hour);
+        } else {
+            returnCal.set(2000,1,1,23,59);
+        }
+        return returnCal;
+    }
+
+    private boolean getIgnoreAllDayEvents() {
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(mContext);
+        boolean returnBool = sharedPref.getBoolean(SettingsActivity.KEY_IGNORE_ALL_DAY_EVENTS, true);
+        return returnBool;
     }
 }
