@@ -650,7 +650,7 @@ public class GoogleCalendarClient {
         this.mDimEventColors = dimEventColors;
     }
 
-    private Calendar getFreeSlotMinStartTime() {
+    public Calendar getFreeSlotMinStartTime() {
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(mContext);
         String syncConnPref = sharedPref.getString(SettingsActivity.KEY_MIN_OPENING_START_TIME, "");
         Calendar returnCal = Calendar.getInstance();
@@ -662,7 +662,7 @@ public class GoogleCalendarClient {
 
     }
 
-    private Calendar getFreeSlotMaxEndTime() {
+    public Calendar getFreeSlotMaxEndTime() {
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(mContext);
         String syncConnPref = sharedPref.getString(SettingsActivity.KEY_MAX_OPENING_END_TIME, "");
         Calendar returnCal = Calendar.getInstance();

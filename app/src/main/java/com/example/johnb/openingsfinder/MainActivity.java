@@ -54,6 +54,7 @@ public class MainActivity extends AppCompatActivity
     private static final int TYPE_THREE_DAY_VIEW = 2;
     private static final int TYPE_WEEK_VIEW = 3;
     private int mWeekViewType = TYPE_THREE_DAY_VIEW;
+    private static boolean validMinMaxDiff = false;
     private static boolean findTimes = false;
     private static final int MENU_TODAY = Menu.FIRST;
     private static final int MENU_LIST = Menu.FIRST + 1;
@@ -61,6 +62,9 @@ public class MainActivity extends AppCompatActivity
 
     private WeekView mWeekView;
     private static boolean inEditMode = false;
+
+    private ArrayList<GoogleCalendarClient.GCalendar> allCalendars= new ArrayList<GoogleCalendarClient.GCalendar>();
+    private ArrayList<GoogleCalendarClient.GCalendar> desiredCalendars = new ArrayList<GoogleCalendarClient.GCalendar>();
 
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -105,33 +109,6 @@ public class MainActivity extends AppCompatActivity
     }
 
 
-    /*private void addDrawerItems() {
-        String[] osArray = { "Bluetooth", "Reply to Calls", "Reply to sms", "customise message"};
-        ListView mDrawerList = (ListView) findViewById(R.id.listView);
-
-        ArrayAdapter mAdapter = new ArrayAdapter<String>(this,
-                android.R.layout.simple_list_item_multiple_choice, osArray);
-
-        mDrawerList.setAdapter(mAdapter);
-
-        mDrawerList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-
-                CheckedTextView ctv = (CheckedTextView)view;
-                if (ctv.isChecked()){
-                    Toast.makeText(getApplicationContext(),"uncheckd",Toast.LENGTH_LONG).show();
-                }
-                else {
-                    Toast.makeText(getApplicationContext(),"checked",Toast.LENGTH_LONG).show();
-                }
-
-            }
-        });
-    }
-
-
-*/
 
 
 
@@ -373,13 +350,49 @@ public class MainActivity extends AppCompatActivity
             }
         } else if (id == R.id.settings) {
             launchSettingsActivity();
+        }else if(item.isCheckable()){
+            if(item.getIcon().getConstantState().equals(getResources().getDrawable(R.drawable.ic_check).getConstantState())){
+                item.setIcon(null);
+                removeFromDesiredCalendars(item.toString());
+
+            }
+
+            else{
+                item.setIcon(R.drawable.ic_check);
+                addToDesiredCalendars(item.toString());
+
+            }
+
+            GoogleCalendarClient.getInstance().setDesiredCalendars(desiredCalendars);
+            mWeekView.notifyDatasetChanged();
+
         }
 
 
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        drawer.closeDrawer(GravityCompat.START);
+        //DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        //drawer.closeDrawer(GravityCompat.START);
 
         return true;
+    }
+
+    private void removeFromDesiredCalendars(String calendarName){
+        for(int i = 0; i < desiredCalendars.size(); i++){
+            if(desiredCalendars.get(i).getName().equals(calendarName)){
+                desiredCalendars.remove(i);
+                i--;
+            }
+        }
+    }
+
+    private void addToDesiredCalendars(String calendarName){
+
+        for(int i = 0; i < allCalendars.size(); i++){
+
+            if(allCalendars.get(i).getName().equals(calendarName)){
+                desiredCalendars.add(allCalendars.get(i));
+
+            }
+        }
     }
 
     protected String getEventTitle(Calendar time) {
@@ -436,19 +449,23 @@ public class MainActivity extends AppCompatActivity
         mWeekView.notifyDatasetChanged();
     }
 
+
     @Override
     public void onCalendarsLoaded() {
         //// TODO: 5/29/2016 Do something with this:
-        ArrayList<GoogleCalendarClient.GCalendar> calendars = GoogleCalendarClient.getInstance().getCalendarCache();
+        allCalendars = GoogleCalendarClient.getInstance().getCalendarCache();
+        desiredCalendars = GoogleCalendarClient.getInstance().getCalendarCache();
         //this is to initially show all calendars so you know everything working, change this to work how you want.
-        GoogleCalendarClient.getInstance().setDesiredCalendars(calendars);
+        GoogleCalendarClient.getInstance().setDesiredCalendars(desiredCalendars);
         mWeekView.notifyDatasetChanged();
         NavigationView navView = (NavigationView)findViewById(R.id.nav_view);
         Menu menu = navView.getMenu();
         SubMenu subMenu = menu.getItem(1).getSubMenu();
 
-        for(GoogleCalendarClient.GCalendar g : calendars ){
+
+        for(GoogleCalendarClient.GCalendar g : allCalendars ){
             subMenu.add(g.getName());
+            subMenu.getItem(subMenu.size()-1).setCheckable(true).setIcon(R.drawable.ic_check);
         }
 
     }
@@ -461,8 +478,20 @@ public class MainActivity extends AppCompatActivity
                 long durationInMillis = durationInMinutes*60*1000;
                 GoogleCalendarClient.getInstance().setDuration(durationInMillis);
                 mWeekView.notifyDatasetChanged();
-                if(durationInMillis != 0)
+                if(GoogleCalendarClient.getInstance().getFreeSlotMaxEndTime().getTimeInMillis() - GoogleCalendarClient.getInstance().getFreeSlotMinStartTime().getTimeInMillis() < durationInMillis){
+                    ValidTimeFragment validTime = new ValidTimeFragment(getApplicationContext());
+                    validTime.setInteractionListener(new ValidTimeFragment.OnInteractionListener() {
+                        @Override
+                        public void onInteraction(boolean isValid) {
+                            validMinMaxDiff = isValid;
+                        }
+                    });
+                    validTime.show(getFragmentManager(),"errorValidTime");
+
+                }
+               else{
                     enterEditMode();
+                }
             }
         });
         eventFragment.show(getFragmentManager(),"newEvent");
@@ -529,9 +558,10 @@ public class MainActivity extends AppCompatActivity
         outState.putSerializable("focus_day",mWeekView.getFirstVisibleDay());
     }
 
-    private void launchSettingsActivity() {
+    public void launchSettingsActivity() {
         Intent intent = new Intent(this, SettingsActivity.class);
         startActivity(intent);
     }
+
 }
 
