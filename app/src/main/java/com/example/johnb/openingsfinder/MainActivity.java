@@ -319,7 +319,7 @@ public class MainActivity extends AppCompatActivity
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        setupDateTimeInterpreter(id == R.id.week);
+        setupDateTimeInterpreter(id != R.id.single_day && id !=R.id.three_day);
 
         if (id == R.id.single_day) {
             if (mWeekViewType != TYPE_DAY_VIEW) {
@@ -499,7 +499,6 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onCalendarsLoaded() {
-        //// TODO: 5/29/2016 Do something with this:
         allCalendars = GoogleCalendarClient.getInstance().getCalendarCache();
         desiredCalendars = GoogleCalendarClient.getInstance().getCalendarCache();
         //this is to initially show all calendars so you know everything working, change this to work how you want.
@@ -509,8 +508,9 @@ public class MainActivity extends AppCompatActivity
         Menu menu = navView.getMenu();
         SubMenu subMenu = menu.getItem(1).getSubMenu();
 
-
+        subMenu.clear();
         for(GoogleCalendarClient.GCalendar g : allCalendars ){
+
             subMenu.add(g.getName());
             subMenu.getItem(subMenu.size()-1).setIcon(R.drawable.ic_check);
         }
