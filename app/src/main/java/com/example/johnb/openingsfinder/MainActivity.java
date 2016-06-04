@@ -620,6 +620,9 @@ public class MainActivity extends AppCompatActivity
         ContentUris.appendId(builder, startMillis);
         Intent intent = new Intent(Intent.ACTION_VIEW)
                 .setData(builder.build());
+
+        mGoogleCalendarClientNeedsRefresh = true;
+
         startActivity(intent);
     }
 
