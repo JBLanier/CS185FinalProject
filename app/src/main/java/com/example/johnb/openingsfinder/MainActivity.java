@@ -308,6 +308,7 @@ public class MainActivity extends AppCompatActivity
     public boolean onNavigationItemSelected(MenuItem item) {
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
 
         // Handle navigation view item clicks here.
         int id = item.getItemId();
@@ -325,6 +326,7 @@ public class MainActivity extends AppCompatActivity
                 mWeekView.setColumnGap((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 8, getResources().getDisplayMetrics()));
                 mWeekView.setTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12, getResources().getDisplayMetrics()));
                 mWeekView.setEventTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12, getResources().getDisplayMetrics()));
+                drawer.closeDrawer(GravityCompat.START);
             }
         } else if (id == R.id.three_day) {
             if (mWeekViewType != TYPE_THREE_DAY_VIEW) {
@@ -336,6 +338,7 @@ public class MainActivity extends AppCompatActivity
                 mWeekView.setColumnGap((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 8, getResources().getDisplayMetrics()));
                 mWeekView.setTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12, getResources().getDisplayMetrics()));
                 mWeekView.setEventTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12, getResources().getDisplayMetrics()));
+                drawer.closeDrawer(GravityCompat.START);
             }
         } else if (id == R.id.week) {
             if (mWeekViewType != TYPE_WEEK_VIEW) {
@@ -347,10 +350,11 @@ public class MainActivity extends AppCompatActivity
                 mWeekView.setColumnGap((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 2, getResources().getDisplayMetrics()));
                 mWeekView.setTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 10, getResources().getDisplayMetrics()));
                 mWeekView.setEventTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 10, getResources().getDisplayMetrics()));
+                drawer.closeDrawer(GravityCompat.START);
             }
         } else if (id == R.id.settings) {
             launchSettingsActivity();
-        }else if(item.isCheckable()){
+        }else {
             if(item.getIcon().getConstantState().equals(getResources().getDrawable(R.drawable.ic_check).getConstantState())){
                 item.setIcon(null);
                 removeFromDesiredCalendars(item.toString());
@@ -369,8 +373,7 @@ public class MainActivity extends AppCompatActivity
         }
 
 
-        //DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        //drawer.closeDrawer(GravityCompat.START);
+
 
         return true;
     }
@@ -465,7 +468,7 @@ public class MainActivity extends AppCompatActivity
 
         for(GoogleCalendarClient.GCalendar g : allCalendars ){
             subMenu.add(g.getName());
-            subMenu.getItem(subMenu.size()-1).setCheckable(true).setIcon(R.drawable.ic_check);
+            subMenu.getItem(subMenu.size()-1).setIcon(R.drawable.ic_check);
         }
 
     }
