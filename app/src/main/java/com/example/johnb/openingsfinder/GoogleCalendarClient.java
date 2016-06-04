@@ -495,7 +495,7 @@ public class GoogleCalendarClient {
 
     private ArrayList<WeekViewEvent> getFreeSlotsForMonth(ArrayList<WeekViewEvent> events) {
         ArrayList<WeekViewEvent> freeSlots = new ArrayList<>();
-        if(mDesiredFreeSlotDuration != 0) {
+        if(mDesiredFreeSlotDuration != 0 && !(getFreeSlotMaxEndTime().getTimeInMillis()-getFreeSlotMinStartTime().getTimeInMillis() < mDesiredFreeSlotDuration)) {
 
             String yearAndMonth = events.get(events.size() - 1).getName();
 
