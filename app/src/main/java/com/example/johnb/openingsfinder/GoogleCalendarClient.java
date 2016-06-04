@@ -11,6 +11,8 @@ import android.database.Cursor;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.provider.CalendarContract;
 import android.support.v4.content.ContextCompat;
@@ -123,7 +125,7 @@ public class GoogleCalendarClient {
         }
     }
 
-    public class GCalendar {
+    public static class GCalendar implements Parcelable{
 
         private String mName;
         private long mId;
@@ -140,6 +142,32 @@ public class GoogleCalendarClient {
         public long getId() {
             return mId;
         }
+
+        public int describeContents() {
+            return 0;
+        }
+
+        public void writeToParcel(Parcel out, int flags) {
+            out.writeLong(mId);
+            out.writeString(mName);
+        }
+
+        public static final Parcelable.Creator<GCalendar> CREATOR
+                = new Parcelable.Creator<GCalendar>() {
+            public GCalendar createFromParcel(Parcel in) {
+                return new GCalendar(in);
+            }
+
+            public GCalendar[] newArray(int size) {
+                return new GCalendar[size];
+            }
+        };
+
+        private GCalendar(Parcel in) {
+            mId = in.readInt();
+            mName = in.readString();
+        }
+
     }
 
     static class GCalendarAsyncQueryHandler extends AsyncQueryHandler {
