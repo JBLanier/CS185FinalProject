@@ -1,13 +1,18 @@
 package com.example.johnb.openingsfinder;
 
 import android.Manifest;
+import android.app.AlertDialog;
+import android.content.ContentUris;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.RectF;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.CalendarContract;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
@@ -62,6 +67,7 @@ public class MainActivity extends AppCompatActivity
 
     private WeekView mWeekView;
     private static boolean inEditMode = false;
+    private static boolean mGoogleCalendarClientNeedsRefresh = false;
 
     private ArrayList<GoogleCalendarClient.GCalendar> allCalendars= new ArrayList<GoogleCalendarClient.GCalendar>();
     private ArrayList<GoogleCalendarClient.GCalendar> desiredCalendars = new ArrayList<GoogleCalendarClient.GCalendar>();
@@ -408,8 +414,46 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void onEventLongPress(WeekViewEvent event, RectF eventRect) {
-        Toast.makeText(this, "Long pressed event: " + event.getName(), Toast.LENGTH_SHORT).show();
+    public void onEventLongPress(final WeekViewEvent event, RectF eventRect) {
+        if (GoogleCalendarClient.calIDFromWeekViewEvent(event) == -1) {
+            DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    switch (which){
+                        case DialogInterface.BUTTON_POSITIVE:
+                            launchGCalCreateEventIntent(event);
+                            break;
+
+                        case DialogInterface.BUTTON_NEGATIVE:
+                            //No button clicked
+                            break;
+                    }
+                }
+            };
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+            builder.setMessage("Create New Event in Google Calendar?").setPositiveButton("Yes", dialogClickListener)
+                    .setNegativeButton("No", dialogClickListener).show();
+        } else {
+            DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    switch (which){
+                        case DialogInterface.BUTTON_POSITIVE:
+                            launchGCalViewEventIntent(event);
+                            break;
+
+                        case DialogInterface.BUTTON_NEGATIVE:
+                            //No button clicked
+                            break;
+                    }
+                }
+            };
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+            builder.setMessage("View Event in Google Calendar?").setPositiveButton("Yes", dialogClickListener)
+                    .setNegativeButton("No", dialogClickListener).show();
+        }
     }
 
     @Override
@@ -567,5 +611,38 @@ public class MainActivity extends AppCompatActivity
         startActivity(intent);
     }
 
+    public void launchGCalViewEventIntent(WeekViewEvent event) {
+        // A date-time specified in milliseconds since the epoch.
+        long startMillis = event.getStartTime().getTimeInMillis();
+
+        Uri.Builder builder = CalendarContract.CONTENT_URI.buildUpon();
+        builder.appendPath("time");
+        ContentUris.appendId(builder, startMillis);
+        Intent intent = new Intent(Intent.ACTION_VIEW)
+                .setData(builder.build());
+        startActivity(intent);
+    }
+
+    public void launchGCalCreateEventIntent(WeekViewEvent event) {
+        Intent intent = new Intent(Intent.ACTION_INSERT)
+                .setData(CalendarContract.Events.CONTENT_URI)
+                .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, event.getStartTime().getTimeInMillis())
+                .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, event.getEndTime().getTimeInMillis());
+
+        mGoogleCalendarClientNeedsRefresh = true;
+
+        startActivity(intent);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (mGoogleCalendarClientNeedsRefresh) {
+            GoogleCalendarClient.getInstance().clearCache();
+            GoogleCalendarClient.getInstance().loadCalendars();
+            mWeekView.notifyDatasetChanged();
+            mGoogleCalendarClientNeedsRefresh = false;
+        }
+    }
 }
 

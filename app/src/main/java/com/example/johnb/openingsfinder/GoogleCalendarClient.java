@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.AsyncQueryHandler;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -452,7 +453,7 @@ public class GoogleCalendarClient {
         return newID;
     }
 
-    private long calIDFromWeekViewEvent(WeekViewEvent event) {
+    public static long calIDFromWeekViewEvent(WeekViewEvent event) {
         long eventID = event.getId();
         String eventIDString = String.format("%d",eventID);
         String[] s = eventIDString.split("00000");
@@ -683,4 +684,10 @@ public class GoogleCalendarClient {
         boolean returnBool = sharedPref.getBoolean(SettingsActivity.KEY_IGNORE_ALL_DAY_EVENTS, true);
         return returnBool;
     }
+
+    public void clearCache() {
+        mCachedCalendars.clear();
+        mCachedEvents.clear();
+    }
+
 }
