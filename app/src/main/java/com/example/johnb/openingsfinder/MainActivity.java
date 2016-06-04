@@ -479,7 +479,7 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void OnDone(int durationInMinutes){
                 long durationInMillis = durationInMinutes*60*1000;
-                GoogleCalendarClient.getInstance().setDuration(durationInMillis);
+
                 mWeekView.notifyDatasetChanged();
                 if(GoogleCalendarClient.getInstance().getFreeSlotMaxEndTime().getTimeInMillis() - GoogleCalendarClient.getInstance().getFreeSlotMinStartTime().getTimeInMillis() < durationInMillis){
                     ValidTimeFragment validTime = new ValidTimeFragment(getApplicationContext());
@@ -493,6 +493,7 @@ public class MainActivity extends AppCompatActivity
 
                 }
                else{
+                    GoogleCalendarClient.getInstance().setDuration(durationInMillis);
                     enterEditMode();
                 }
             }
