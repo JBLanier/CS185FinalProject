@@ -303,6 +303,8 @@ public class GoogleCalendarClient {
 
                 endTime.setTimeInMillis(startTime.getTimeInMillis() + TimeUnit.DAYS.toMillis(1));
 
+            } else if (DTEnd-DTStart < 600000) {
+                endTime.setTimeInMillis(DTStart+600000);
             }
 
             //Log Stuff
@@ -590,7 +592,7 @@ public class GoogleCalendarClient {
                     if (ESASE && EEASE) {
                         //If event is completely after free slot : DO NOTHING
                     }
-                    if (ESBSS && EEASS && EEBSE) {
+                    if ((ESBSS && EEASS && EEBSE) || (!ESBSS && !ESASS && EEASS && EEBSE)) {
                         //Event begins before free slot and ends during free slot
                         freeSlot.setStartTime(event.getEndTime());
                         long duration = freeSlot.getEndTime().getTimeInMillis() - freeSlot.getStartTime().getTimeInMillis();
@@ -598,7 +600,7 @@ public class GoogleCalendarClient {
                             toRemove.add(freeSlot);
                         }
                     }
-                    if (ESBSE && ESASS && EEASE) {
+                    if ((ESBSE && ESASS && EEASE) || (ESBSE && ESASS && !EEASE && !EEBSE)) {
                         //Event begins during free slot and ends after free slot
                         freeSlot.setEndTime(event.getStartTime());
                         long duration = freeSlot.getEndTime().getTimeInMillis() - freeSlot.getStartTime().getTimeInMillis();
@@ -606,7 +608,7 @@ public class GoogleCalendarClient {
                             toRemove.add(freeSlot);
                         }
                     }
-                    if (ESBSS && EEASE) {
+                    if ((ESBSS && EEASE) || (ESBSS && !EEASE && !EEBSE) || (!ESBSS && !ESASS && EEASE) || (!ESBSS && !ESASS && !EEASE && !EEBSE)) {
                         //Event begins before free slot and ends after free slot : REMOVE FREE SLOT
                         toRemove.add(freeSlot);
                     }
