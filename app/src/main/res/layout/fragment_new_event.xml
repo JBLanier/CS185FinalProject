@@ -8,7 +8,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="How long will the event be?"
+        android:text="At least how long will the event be?"
         android:textSize="20dp"
         android:id="@+id/query"
         android:layout_margin="20dp" />

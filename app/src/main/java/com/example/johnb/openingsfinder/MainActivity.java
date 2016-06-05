@@ -6,7 +6,6 @@ import android.content.ContentUris;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.RectF;
 import android.net.Uri;
@@ -14,7 +13,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.CalendarContract;
-import android.provider.Settings;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
@@ -426,12 +424,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void onEventClick(WeekViewEvent event, RectF eventRect) {
-        Toast.makeText(this, ""+event.getEndTime().get(Calendar.HOUR_OF_DAY), Toast.LENGTH_SHORT).show();
-    }
-
-    @Override
-    public void onEventLongPress(final WeekViewEvent event, RectF eventRect) {
+    public void onEventClick(final WeekViewEvent event, RectF eventRect) {
         if (GoogleCalendarClient.calIDFromWeekViewEvent(event) == -1) {
             DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
                 @Override
@@ -471,6 +464,11 @@ public class MainActivity extends AppCompatActivity
             builder.setMessage("View Event in Google Calendar?").setPositiveButton("Yes", dialogClickListener)
                     .setNegativeButton("No", dialogClickListener).show();
         }
+    }
+
+    @Override
+    public void onEventLongPress(final WeekViewEvent event, RectF eventRect) {
+
     }
 
     @Override
