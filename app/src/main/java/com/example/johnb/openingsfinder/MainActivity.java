@@ -12,7 +12,9 @@ import android.graphics.RectF;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.provider.CalendarContract;
+import android.provider.Settings;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
@@ -68,6 +70,7 @@ public class MainActivity extends AppCompatActivity
     private WeekView mWeekView;
     private static boolean inEditMode = false;
     private static boolean mGoogleCalendarClientNeedsRefresh = false;
+    private static Calendar mFocusday;
 
     private ArrayList<GoogleCalendarClient.GCalendar> allCalendars= new ArrayList<GoogleCalendarClient.GCalendar>();
     private ArrayList<GoogleCalendarClient.GCalendar> desiredCalendars = new ArrayList<GoogleCalendarClient.GCalendar>();
@@ -84,17 +87,19 @@ public class MainActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, true);
+
         Log.d(TAG, "onCreate: Called");
 
         int numVisibleDays = 7;
-        Calendar focusDay = null;
+        mFocusday = Calendar.getInstance();
 
         if (savedInstanceState != null) {
             inEditMode = savedInstanceState.getBoolean("edit_mode");
 
             numVisibleDays = savedInstanceState.getInt("number_visible_days");
 
-            focusDay = (Calendar) savedInstanceState.getSerializable("focus_day");
+            mFocusday = (Calendar) savedInstanceState.getSerializable("focus_day");
         }
 
         Log.d(TAG, "onCreate: INEDITMODE: " + inEditMode);
@@ -108,7 +113,7 @@ public class MainActivity extends AppCompatActivity
         if (checkCalendarPermissions()) {
            setUpGoogleCalendarClient();
         }
-        setUpWeekView(numVisibleDays, focusDay);
+        setUpWeekView(numVisibleDays);
 
 
         //addDrawerItems();
@@ -166,12 +171,27 @@ public class MainActivity extends AppCompatActivity
 
     }
 
-    void setUpWeekView(int numVisibleDays, Calendar focusDay) {
+    void setUpWeekView(int numVisibleDays) {
         // Get a reference for the week view in the layout.
         mWeekView = (WeekView) findViewById(R.id.weekView);
 
+        mWeekView.setFirstDayOfWeek(Calendar.getInstance().get(Calendar.DAY_OF_WEEK));
 
-        mWeekView.setNumberOfVisibleDays(numVisibleDays);
+        if (numVisibleDays == 1) {
+            setWeekViewTypeOneDay();
+        } else if (numVisibleDays == 3) {
+            setWeekViewTypeThreeDay();
+        } else if (numVisibleDays == 7) {
+            setWeekViewTypeSevenDay();
+        }
+
+        mWeekView.goToDate(mFocusday);
+
+        //Calendar c = Calendar.getInstance();
+        //mWeekView.goToDate(c);
+
+
+
         // Show a toast message about the touched event.
         mWeekView.setOnEventClickListener(this);
 
@@ -191,6 +211,8 @@ public class MainActivity extends AppCompatActivity
         } else {
             setupDateTimeInterpreter(false);
         }
+
+
 
     }
 
@@ -224,8 +246,19 @@ public class MainActivity extends AppCompatActivity
                     setUpGoogleCalendarClient();
                 } else {
                     Log.d("PermissionsReqResult", "Permissions Denied");
-                    Toast.makeText(this, "Calendar Permissions Denied - We should show an alert and quit I think", Toast.LENGTH_LONG).show();
-                    // permission denied, Disable the functionality that depends on this permission.
+                    AlertDialog alertDialog = new AlertDialog.Builder(MainActivity.this).create();
+                    alertDialog.setTitle("Uh Oh!");
+                    alertDialog.setMessage("Openings Finder needs calendar access to do its job. You can change this in settings or by simply restarting this app.");
+                    alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
+                            new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int which) {
+                                    dialog.dismiss();
+                                    finish();
+                                }
+                            });
+                    alertDialog.setCanceledOnTouchOutside(false);
+                    alertDialog.show();
+
                 }
                 return;
             }
@@ -322,42 +355,26 @@ public class MainActivity extends AppCompatActivity
         setupDateTimeInterpreter(id != R.id.single_day && id !=R.id.three_day);
 
         if (id == R.id.single_day) {
-            if (mWeekViewType != TYPE_DAY_VIEW) {
-                //item.setChecked(!item.isChecked());
+            Calendar c = mWeekView.getFirstVisibleDay();
+            setWeekViewTypeOneDay();
+            mWeekView.goToDate(c);
 
-                mWeekViewType = TYPE_DAY_VIEW;
-                mWeekView.setNumberOfVisibleDays(1);
-
-                // Lets change some dimensions to best fit the view.
-                mWeekView.setColumnGap((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 8, getResources().getDisplayMetrics()));
-                mWeekView.setTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12, getResources().getDisplayMetrics()));
-                mWeekView.setEventTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12, getResources().getDisplayMetrics()));
-                drawer.closeDrawer(GravityCompat.START);
-            }
+            drawer.closeDrawer(GravityCompat.START);
         } else if (id == R.id.three_day) {
-            if (mWeekViewType != TYPE_THREE_DAY_VIEW) {
-                //item.setChecked(!item.isChecked());
-                mWeekViewType = TYPE_THREE_DAY_VIEW;
-                mWeekView.setNumberOfVisibleDays(3);
+            Calendar c = mWeekView.getFirstVisibleDay();
 
-                // Lets change some dimensions to best fit the view.
-                mWeekView.setColumnGap((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 8, getResources().getDisplayMetrics()));
-                mWeekView.setTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12, getResources().getDisplayMetrics()));
-                mWeekView.setEventTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12, getResources().getDisplayMetrics()));
-                drawer.closeDrawer(GravityCompat.START);
-            }
+            setWeekViewTypeThreeDay();
+            mWeekView.goToDate(c);
+
+            drawer.closeDrawer(GravityCompat.START);
         } else if (id == R.id.week) {
-            if (mWeekViewType != TYPE_WEEK_VIEW) {
-                //item.setChecked(!item.isChecked());
-                mWeekViewType = TYPE_WEEK_VIEW;
-                mWeekView.setNumberOfVisibleDays(7);
+            Calendar c = mWeekView.getFirstVisibleDay();
 
-                // Lets change some dimensions to best fit the view.
-                mWeekView.setColumnGap((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 2, getResources().getDisplayMetrics()));
-                mWeekView.setTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 10, getResources().getDisplayMetrics()));
-                mWeekView.setEventTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 10, getResources().getDisplayMetrics()));
-                drawer.closeDrawer(GravityCompat.START);
-            }
+            setWeekViewTypeSevenDay();
+            mWeekView.goToDate(c);
+
+            drawer.closeDrawer(GravityCompat.START);
+
         } else if (id == R.id.settings) {
             launchSettingsActivity();
         }else {
@@ -635,16 +652,63 @@ public class MainActivity extends AppCompatActivity
         mGoogleCalendarClientNeedsRefresh = true;
 
         startActivity(intent);
+
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         if (mGoogleCalendarClientNeedsRefresh) {
+            if (inEditMode) {
+                GoogleCalendarClient.getInstance().setDuration(0);
+                exitEditMode();
+            }
+
             GoogleCalendarClient.getInstance().clearCache();
             GoogleCalendarClient.getInstance().loadCalendars();
             mWeekView.notifyDatasetChanged();
             mGoogleCalendarClientNeedsRefresh = false;
+        }
+    }
+
+    private void setWeekViewTypeOneDay() {
+        if (mWeekViewType != TYPE_DAY_VIEW) {
+            //item.setChecked(!item.isChecked());
+
+            mWeekViewType = TYPE_DAY_VIEW;
+            mWeekView.setNumberOfVisibleDays(1);
+
+            // Lets change some dimensions to best fit the view.
+            mWeekView.setColumnGap((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 8, getResources().getDisplayMetrics()));
+            mWeekView.setTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12, getResources().getDisplayMetrics()));
+            mWeekView.setEventTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12, getResources().getDisplayMetrics()));
+        }
+    }
+
+    private  void setWeekViewTypeThreeDay(){
+        if (mWeekViewType != TYPE_THREE_DAY_VIEW) {
+            //item.setChecked(!item.isChecked());
+            mWeekViewType = TYPE_THREE_DAY_VIEW;
+            mWeekView.setNumberOfVisibleDays(3);
+
+            // Lets change some dimensions to best fit the view.
+            mWeekView.setColumnGap((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 8, getResources().getDisplayMetrics()));
+            mWeekView.setTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12, getResources().getDisplayMetrics()));
+            mWeekView.setEventTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12, getResources().getDisplayMetrics()));
+        }
+    }
+
+    private void setWeekViewTypeSevenDay(){
+
+        if (mWeekViewType != TYPE_WEEK_VIEW) {
+            //item.setChecked(!item.isChecked());
+            mWeekViewType = TYPE_WEEK_VIEW;
+            mWeekView.setNumberOfVisibleDays(7);
+
+            // Lets change some dimensions to best fit the view.
+            mWeekView.setColumnGap((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 2, getResources().getDisplayMetrics()));
+            mWeekView.setTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 10, getResources().getDisplayMetrics()));
+            mWeekView.setEventTextSize((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 10, getResources().getDisplayMetrics()));
         }
     }
 }

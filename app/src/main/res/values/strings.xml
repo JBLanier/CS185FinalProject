@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">OpeningsFinder</string>
+    <string name="app_name">Openings Finder</string>
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
@@ -15,4 +15,6 @@
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="action_exit_edit">Exit</string>
+    <string name="min_opening_start_time_default">6</string>
+    <string name="max_opening_end_time_default">0</string>
 </resources>

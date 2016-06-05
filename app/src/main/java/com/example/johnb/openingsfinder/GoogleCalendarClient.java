@@ -683,7 +683,7 @@ public class GoogleCalendarClient {
 
     public Calendar getFreeSlotMinStartTime() {
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(mContext);
-        String syncConnPref = sharedPref.getString(SettingsActivity.KEY_MIN_OPENING_START_TIME, "");
+        String syncConnPref = sharedPref.getString(SettingsActivity.KEY_MIN_OPENING_START_TIME, "6");
         Calendar returnCal = Calendar.getInstance();
         returnCal.set(2000,1,1,0,0);
         int hour = Integer.parseInt(syncConnPref);
@@ -695,7 +695,7 @@ public class GoogleCalendarClient {
 
     public Calendar getFreeSlotMaxEndTime() {
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(mContext);
-        String syncConnPref = sharedPref.getString(SettingsActivity.KEY_MAX_OPENING_END_TIME, "");
+        String syncConnPref = sharedPref.getString(SettingsActivity.KEY_MAX_OPENING_END_TIME, "0");
         Calendar returnCal = Calendar.getInstance();
         returnCal.set(2000,1,1,23,0);
         int hour = Integer.parseInt(syncConnPref);
@@ -709,7 +709,7 @@ public class GoogleCalendarClient {
 
     private boolean getIgnoreAllDayEvents() {
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(mContext);
-        boolean returnBool = sharedPref.getBoolean(SettingsActivity.KEY_IGNORE_ALL_DAY_EVENTS, true);
+        boolean returnBool = sharedPref.getBoolean(SettingsActivity.KEY_IGNORE_ALL_DAY_EVENTS, false);
         return returnBool;
     }
 
